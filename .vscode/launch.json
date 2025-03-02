@@ -20,7 +20,7 @@
             "program": {
                 "command": "love"
             },
-            "args": ["."]
+            "args": ["src"]
         }
     ]
 }
