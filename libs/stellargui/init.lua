@@ -1,9 +1,11 @@
 -- stellar
 local stellar = {}
 
-local selfpath = (...):match("^(.+%.[^.]+)$"):gsub("%.", "/")
-love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. (";%s/?.lua"):format(selfpath))
-print(...)
+print((...):match("^(.*%.?[^.]+)$"):gsub("%.", "/"))
+
+local selfpath = (...):match("^(.*%.?[^.]+)$"):gsub("%.", "/")
+love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";" .. love.filesystem.getRequirePath():gsub("(%?%.lua)", selfpath .. "/%1"))
+print(love.filesystem.getRequirePath())
 
 local ffi = require("ffi")
 
