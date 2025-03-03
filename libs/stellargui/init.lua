@@ -363,7 +363,11 @@ function stellar.register(uiobj)
     return newIndex
 end
 
-function stellar.unregister(uiobj)
+---Unregister the UI object descriptor in a system by object pointer or registeredIndex
+---@param uiobj ObjectUI|registeredIndex A UI object/index to unregister
+---@param message string Unregister message
+---@see ObjectUI.unregister for ui object unregister behavior
+function stellar.unregister(uiobj, message)
     local registeredIndex
 
     if type(uiobj) == "table" then
@@ -380,8 +384,18 @@ function stellar.unregister(uiobj)
         end
     end
 
-    registeredObjects[uiobj] = nil
+    if not registeredObjects[registeredIndex]:unregister() then
+        registeredObjects[registeredIndex] = nil
+    end
+
     return true
+end
+
+---Unregisters all objects from the system
+function stellar.unregisterAll()
+    for i, _ in pairs(registeredObjects) do
+        stellar.unregister(i)
+    end
 end
 
 function stellar.loadExternalObjects(path)

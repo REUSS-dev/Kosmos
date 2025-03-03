@@ -203,6 +203,22 @@ function ObjectUI:hoverOff(x, y)
     self.hl = false
 end
 
+--Triggers when object gets unregistered from StellarGUI. Partially serves as a kind of destructor.
+---@param message string Unregister request message. Serves as a kind of "signal" [like in e.g. POSIX *kill* command] passed to UI object when lib tries to unregister it. 
+---@return boolean? unregisterOk If the object ready to be unregistered. Return **true**, if object should not be unregistered right now, **false/nil** otherwise
+---@diagnostic disable-next-line: unused-local
+function ObjectUI:unregister(message)
+    if self.focus then
+        self:revokeFocus()
+    end
+
+    if self.hl then
+        self:hoverOff(-1, -1)
+    end
+
+    ---@todo Possibly add mouse click releases?
+end
+
 --- Virtuals
 
 ---Paint the UI object on screen.<br>**This function is virtual and must be defined in a child class**
