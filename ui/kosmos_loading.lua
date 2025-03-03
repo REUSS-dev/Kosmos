@@ -48,7 +48,7 @@ local JUMPING_INTERVAL = 1
 ---@field r number
 ---@field symbols string[]
 ---@field symbolsCount integer
----@field symbolsSpace radians[]
+---@field symbolsRadianOffset radians[]
 ---@field previousJumping integer
 local KosmosLoading = { }
 local KosmosLoading_meta = {__index = KosmosLoading}
@@ -66,15 +66,15 @@ function KosmosLoading:paint()
     end
 
     for i = 1, self.symbolsCount do
-        local letterRadian = self.symbolsSpace[i] + self.udt
+        local letterRadian = self.symbolsRadianOffset[i] + self.udt
         local rotation = letterRadian + math.pi / 2
 
         local charWidth = self.font:getWidth(self.symbols[i]) / 2
-        local charHeight = self.font:getHeight() / 2
 
         --love.graphics.circle("line", 0, 0, self.r)
 
         if self.previousJumping - 1 == (i % self.symbolsCount) then
+            local charHeight = self.font:getHeight() / 2
             local charCenterX = charWidth / self.r
             
             love.graphics.setColor(1, 1, 1, 1)
@@ -89,8 +89,8 @@ function KosmosLoading:paint()
 
             local radiusMultiplier = 1/3 + (1/2 - 1/3) * (math.abs((jumpingProgress - 0.5)) - 0.5)^2
 
-            local jumpingX = self.r*radiusMultiplier * math.cos(letterRadian + 2*math.pi*jumpingProgress - math.pi)
-            local jumpingY = self.r*radiusMultiplier * math.sin(letterRadian + 2*math.pi*jumpingProgress - math.pi)
+            local jumpingX = self.r * radiusMultiplier * math.cos(letterRadian + 2*math.pi*jumpingProgress - math.pi)
+            local jumpingY = self.r * radiusMultiplier * math.sin(letterRadian + 2*math.pi*jumpingProgress - math.pi)
 
             love.graphics.setColor(0.8, 0.8, 0.5, 0.25)
             for x = -1, 1 do
@@ -115,20 +115,18 @@ end
 --#region private
 
 function KosmosLoading:cutText()
-    self.symbols = {}
     self.symbolsCount = utf.len(self.text)
-    self.symbolsSpace = { 0 }
+    self.symbols = { [0] = ""}
+    self.symbolsRadianOffset = { [0] = 0 }
 
-    local perimeter = 2 * math.pi * self.r
+    local perimeter = 2*math.pi * self.r
     local textWidth = self.font:getWidth(self.text)
 
-    local freeSpace = 2*math.pi * (perimeter - textWidth)/perimeter /self.symbolsCount
+    local freeSpace = 2*math.pi * (perimeter - textWidth) / perimeter / self.symbolsCount
 
-    self.symbols[1] = string.sub(self.text, utf.offset(self.text, 1), utf.offset(self.text, 2) - 1)
-    self.symbolsSpace[1] = freeSpace
-    for i = 2, self.symbolsCount do
+    for i = 1, self.symbolsCount do
         self.symbols[i] = string.sub(self.text, utf.offset(self.text, i), utf.offset(self.text, i + 1) - 1)
-        self.symbolsSpace[i] = self.symbolsSpace[i - 1] + freeSpace + 2*math.pi * self.font:getWidth(self.symbols[i - 1])/perimeter
+        self.symbolsRadianOffset[i] = self.symbolsRadianOffset[i - 1] + freeSpace + 2*math.pi * self.font:getWidth(self.symbols[i - 1])/perimeter
     end
 end
 
@@ -139,16 +137,13 @@ function KosmosLoading:createParticleSystem()
 
     self.particleSystem = love.graphics.newParticleSystem(particleImage, 50)
 
-    self.particleSystem:setParticleLifetime(0.2, JUMPING_INTERVAL) -- Particles live at least 2s and at most 5s.
-	self.particleSystem:setEmissionRate(0)
-	self.particleSystem:setLinearAcceleration(-20, 0, 20, 300) -- Random movement in all directions.
-	self.particleSystem:setColors(1, 1, 0.5, 1, 1, 1, 1, 0) -- Fade to transparency.
+    self.particleSystem:setParticleLifetime(0.1, JUMPING_INTERVAL)
+    self.particleSystem:setColors(1, 1, 0.5, 1, 1, 1, 1, 0)
+	self.particleSystem:setLinearAcceleration(-20, 0, 20, 300)
     self.particleSystem:setEmissionArea("uniform", self.font:getHeight()/2, self.font:getHeight()/2)
 end
 
 --#endregion
-
-button.class = KosmosLoading
 
 -- button fnc
 

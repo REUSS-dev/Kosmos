@@ -1,8 +1,9 @@
 -- stellar
 local stellar = {}
 
-local selfpath = (...):match("^(.+%.)[^.]+$"):gsub("%.", "/")
+local selfpath = (...):match("^(.+%.[^.]+)$"):gsub("%.", "/")
 love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. (";%s/?.lua"):format(selfpath))
+print(...)
 
 local ffi = require("ffi")
 
@@ -29,7 +30,7 @@ local paletteClass = require("classes.Palette")
 
 -- config
 
-local externalTypesDir = "/libs/classes/objects"
+local externalTypesDir = selfpath .. "/classes/objects"
 
 -- consts
 
