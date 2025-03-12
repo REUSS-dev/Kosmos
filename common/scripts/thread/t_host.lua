@@ -12,7 +12,7 @@ local command, event = love.thread.getChannel(commandChannelName), love.thread.g
 local host = enet.host_create(bind_address)
 
 if not host then
-    event:push{"error", 0, string.format("Cannot create host on address %s", bind_address)}
+    event:push{"error", 0, string.format("Cannot create host on address " .. bind_address)}
 end
 
 event:push{"response", 0}
@@ -23,45 +23,65 @@ local commands = {
         event:push{"response", rid, host:get_socket_address()}
     end,
     connect = function (rid, args)
-        local address = args[1]
-        host:connect(address)
+        local address, data = args[1], args[2]
+        host:connect(address, nil, data)
 
         event:push{"response", rid, true}
     end,
     disconnect = function (rid, args)
-        local cid = args[1]
-        host:get_peer(cid):disconnect()
+        local cid, data = args[1], args[2]
+        host:get_peer(cid):disconnect(data)
 
         event:push{"response", rid, true}
     end,
     getRoundTripTime = function (rid, args)
         local cid = args[1]
-        
-        local peer = host:get_peer(cid)
 
-        if not peer then
-            event:push{"error", rid, "No peer with such id: " .. cid}
+        local response
+
+        if type(cid) == "number" then
+            local peer = host:get_peer(cid)
+
+            if not peer then
+                event:push{"error", rid, "No peer with such id: " .. cid}
+            end
+
+            response = peer:round_trip_time()
+        elseif type(cid) == "table" then
+            response = {}
+
+            for i, peerI in ipairs(cid) do
+                local peer = host:get_peer(peerI)
+
+                if not peer then
+                    event:push{"error", rid, "No peer with such id: " .. cid}
+                end
+
+                response[i] = peer:round_trip_time()
+            end
+        else
+            event:push{"error", rid, "Invalid peer id provided: " .. tostring(cid)}
         end
-
-        event:push{"response", rid, {cid, peer:round_trip_time()}}
+        
+        event:push{"response", rid, {cid, response}}
     end
 }
---(PLEASE START COMMANDS SCRPIT WITH NEWLINE) %s
+-- COMMAND SCRIPT STARTS HERE %s
 
 -- events processing
 local function connect(connectEvent)
-    event:push{"connect", connectEvent.peer:index(), tostring(connectEvent.peer)}
+    event:push{"connect", connectEvent.peer:index(), tostring(connectEvent.peer), connectEvent.data}
 end
 
 local function disconnect(disconnectEvent)
-    event:push{"disconnect", disconnectEvent.peer:index(), tostring(disconnectEvent.peer)}
+    event:push{"disconnect", disconnectEvent.peer:index(), tostring(disconnectEvent.peer), disconnectEvent.data}
 end
 
 local function receive(receiveEvent)
     event:push{"receive", receiveEvent.peer:index(), tostring(receiveEvent.data)}
 end
 
---(PLEASE START CUSTOM EVENTS PROCESSING SCRPIT WITH NEWLINE) %s
+-- CUSTOM EVENT PROCESSING SCRIPT STARTS HERE %s
 
 -- update loop
 

@@ -3,7 +3,8 @@ local thost = {}
 
 -- documentation
 
----@alias HostInfoTable {address: string, roundTrip: {[HostPeerIndex]: integer}}
+---@alias HostInfoTable {address: string, connections: {[HostPeerIndex]: HostConnectionInfo}, peerIndices: {[integer]: HostPeerIndex}, _peerIndices: table<HostPeerIndex, integer>}
+---@alias HostConnectionInfo {[1]: string, [2]: integer, [3]: integer} 1 - IP:Port, 2 - connection data, 3 - round trip time
 
 ---@alias HostPeerIndex number
 ---@alias HostEvent {[1]: HostEventType, [2]: HostPeerIndex, [3]: string}
@@ -16,7 +17,50 @@ local thost = {}
 
 -- config
 
-local commands = {
+
+
+-- consts
+
+---@enum HostEventType
+local HostEventType = {
+    RESPONSE = "response",
+    ERROR = "error",
+    CONNECT = "connect",
+    RECEIVE = "receive",
+    DISCONNECT = "disconnect"
+}
+
+local CHANNEL_COMMAND_PREFIX = "KosmohostDo%d"
+local CHANNEL_EVENT_PREFIX = "KosmohostStatus%d"
+
+local HOST_CREATE_TIMEOUT = 3
+local COMMAND_DEFAULT_TIMEOUT = 10
+local DUMMY_ROUND_TRIP = 500
+
+local HOST_THREAD_FILE = "scripts/thread/t_host.lua"
+
+-- vars
+
+local uniqueCounter = 0
+
+local thread_code
+
+local commands
+
+---@enum KosmoHostError
+local Error = {
+    HOST_TIMEOUT = "Creating host on address %s timeout. Try binding another address.",
+    HOST_FAILED = "Error creating host: %s",
+    UNKNOWN_COMMAND = "Command %s is not recognized by this host."
+}
+
+-- init
+
+thread_code = love.filesystem.read(HOST_THREAD_FILE) --[[@as string]]
+
+-- fnc
+
+commands = {
     getAddress = {
         delay = 10,
         callback = function(self, address)
@@ -37,54 +81,23 @@ local commands = {
         delay = 1,
         callback = function (self, roundTripInfo)
             local peer, time = roundTripInfo[1], roundTripInfo[2]
-            self.hostInfo.roundTrip[peer] = time
+            if type(peer) == "number" then
+                self.hostInfo.connections[peer][3] = time
+            else
+                for i, peerI in ipairs(peer) do
+                    self.hostInfo.connections[peerI][3] = time[i]
+                end
+            end
         end
     }
 }
 
--- consts
-
----@enum HostEventType
-local HostEventType = {
-    RESPONSE = "response",
-    ERROR = "error",
-    CONNECT = "connect",
-    RECEIVE = "receive",
-    DISCONNECT = "disconnect"
-}
-
-local CHANNEL_COMMAND_PREFIX = "KosmohostDo%d"
-local CHANNEL_EVENT_PREFIX = "KosmohostStatus%d"
-
-local HOST_CREATE_TIMEOUT = 3
-
-local COMMAND_DEFAULT_TIMEOUT = 10
-
--- vars
-
-local uniqueCounter = 0
-
-local thread_code
-
----@enum KosmoHostError
-local Error = {
-    HOST_TIMEOUT = "Creating host on address %s timeout. Try binding another address.",
-    HOST_FAILED = "Error creating host: %s",
-    UNKNOWN_COMMAND = "Command %s is not recognized by this host."
-}
-
--- init
-
-thread_code = love.filesystem.read("scripts/thread/t_host.lua")
-
--- fnc
-
-
-
 -- classes
 
 ---@class KosmoHost
+---@field public parent table? Optional parenting object set directly. Useful to address via self.parent when setting custom methods
 ---@field hostInfo HostInfoTable
+---@field threadCode string
 ---@field thread love.Thread
 ---@field commandChannelName string
 ---@field eventChannelName string
@@ -141,10 +154,18 @@ function KosmoHost:update(dt)
         elseif newEvent[1] == HostEventType.RECEIVE then
             self:onReceive(newEvent[2], newEvent[3])
         elseif newEvent[1] == HostEventType.CONNECT then
+            self.hostInfo.peerIndices[#self.hostInfo.peerIndices+1] = newEvent[2]
+            self.hostInfo._peerIndices[newEvent[2]] = #self.hostInfo.peerIndices
+            self.hostInfo.connections[newEvent[2]] = {newEvent[3], newEvent[4], DUMMY_ROUND_TRIP}
+
             self:command("getRoundTripTime", newEvent[2])
-            self:onConnect(newEvent[2], newEvent[3])
+            self:onConnect(newEvent[2], newEvent[3], newEvent[4])
         elseif newEvent[1] == HostEventType.DISCONNECT then
-            self:onDisconnect(newEvent[2], newEvent[3])
+            self.hostInfo.connections[newEvent[2]] = nil
+            table.remove(self.hostInfo.peerIndices, self.hostInfo._peerIndices[newEvent[2]])
+            self.hostInfo._peerIndices[newEvent[2]] = nil
+
+            self:onDisconnect(newEvent[2], newEvent[3], newEvent[4])
         elseif newEvent[1] == HostEventType.ERROR then
             if self.commandsQueued[newEvent[2]] then
                 print("Command", newEvent[2], "error", newEvent[3])
@@ -222,9 +243,28 @@ function KosmoHost:getAddress()
     return self.hostInfo.address
 end
 
+function KosmoHost:getPeers()
+    return self.hostInfo.peerIndices
+end
+
+function KosmoHost:getPeerInfo(peerIndex)
+    return self.hostInfo.connections[peerIndex]
+end
+
+---Gets associated peer's round trip time
+---@param peerIndex HostPeerIndex
+---@return integer?
 function KosmoHost:getRoundTrip(peerIndex)
+    if not self.hostInfo.connections[peerIndex] then
+        return
+    end
+
     self:command("getRoundTripTime", peerIndex)
-    return self.hostInfo.roundTrip[peerIndex]
+    return self.hostInfo.connections[peerIndex][3]
+end
+
+function KosmoHost:updateRoundTrip(peerIndexList)
+    return self:command("getRoundTripTime", peerIndexList)
 end
 
 --#region virtuals
@@ -232,17 +272,19 @@ end
 ---Virtual function, triggers on new peer connected to the host
 ---@param peerIndex integer
 ---@param peerAddress string
+---@param data integer
 ---@diagnostic disable-next-line: unused-local
-function KosmoHost:onConnect(peerIndex, peerAddress)
-    print("Connected new peer", peerIndex, "address", peerAddress)
+function KosmoHost:onConnect(peerIndex, peerAddress, data)
+    print("Connected new peer", peerIndex, "address", peerAddress, "data", data)
 end
 
 ---Virtual function, triggers on new peer disconnected from the host
 ---@param peerIndex integer
 ---@param peerAddress string
+---@param data integer
 ---@diagnostic disable-next-line: unused-local
-function KosmoHost:onDisconnect(peerIndex, peerAddress)
-    print("Disconnected peer", peerIndex, "address", peerAddress)
+function KosmoHost:onDisconnect(peerIndex, peerAddress, data)
+    print("Disconnected peer", peerIndex, "address", peerAddress, "data", data)
 end
 
 ---Virtual function, triggers on data received from the peer
@@ -257,11 +299,13 @@ end
 
 -- thosst fnc
 
-function thost.new()
+function thost.new(customCommands, threadCommandsScriptString, threadEventScriptString)
     local obj = setmetatable({
         unique = uniqueCounter,
         hostInfo = {
-            roundTrip = {}
+            connections = {},
+            peerIndices = {},
+            _peerIndices = {}
         },
 
         commandUnique = 0,
@@ -269,7 +313,7 @@ function thost.new()
         commandsQueued = {}
     }, KosmoHost_meta)
 
-    obj.commands = setmetatable({}, {__index = commands})
+    obj.commands = setmetatable(customCommands or {}, {__index = commands})
 
     -- Initialize KosmoHost channels
     obj.commandChannelName = CHANNEL_COMMAND_PREFIX:format(uniqueCounter)
@@ -279,7 +323,7 @@ function thost.new()
     obj.eventChannel = love.thread.getChannel(obj.eventChannelName)
 
     -- Create thread (does not start the thread)
-    obj.thread = love.thread.newThread(obj.threadCode)
+    obj.thread = love.thread.newThread(obj.threadCode:format("\n" .. (threadCommandsScriptString or ""), "\n" .. (threadEventScriptString or "")))
 
     uniqueCounter = uniqueCounter + 1
 
