@@ -1,0 +1,8 @@
+{
+    "Lua.workspace.library": [
+        "C:\\Users\\mreu\\Desktop\\Проекты\\openProcessor\\prostatit",
+        "${3rd}/love2d/library",
+        "${addons}/lua-enet/module/library"
+    ],
+    "Lua.workspace.checkThirdParty": false,
+}
