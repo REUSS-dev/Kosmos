@@ -65,6 +65,16 @@ function CompositeObject:getTranslation()
     return 0, 0
 end
 
+function CompositeObject:unregister(message)
+    local halt
+
+    for _, uiobject in ipairs(self.objects) do
+        halt = halt or uiobject:unregister(message)
+    end
+
+    return halt
+end
+
 ---Tick all UI objects in a composite object.
 ---@param dt seconds
 function CompositeObject:tick(dt)
@@ -104,7 +114,7 @@ end
 
 ---Change current system cursor type
 ---@param origin ObjectUI
----@param type love.CursorType
+---@param type love.CursorType?
 function CompositeObject:setCursor(origin, type)
     self.parent:setCursor(origin, type)
 end

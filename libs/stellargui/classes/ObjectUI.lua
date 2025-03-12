@@ -314,7 +314,7 @@ function ObjectUI:revokeFocus(successor)
 end
 
 ---Change current system cursor type
----@param type love.CursorType
+---@param type love.CursorType?
 function ObjectUI:setCursor(type)
     self.parent:setCursor(self, type)
 end
