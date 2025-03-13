@@ -99,7 +99,8 @@ while true do
         newCommand = command:pop()
     end
 
-    local newEvent = host:service(0)
+    -- Effective TPS of host is 30 (PLEASE DO NOT LEAVE THE PARAMETER OF host:service() BLANK, it SERIOUSLY affects CPU load)
+    local newEvent = host:service(33)
     while newEvent do
         if newEvent.type == "connect" then
             connect(newEvent)
