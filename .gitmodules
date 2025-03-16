@@ -1,0 +1,4 @@
+[submodule "libs/angeliclove"]
+	path = libs/angeliclove
+	url = https://github.com/REUSS-dev/AngelicLove
+	branch = angeliclove
