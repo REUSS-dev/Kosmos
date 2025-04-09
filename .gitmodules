@@ -2,3 +2,6 @@
 	path = libs/angeliclove
 	url = https://github.com/REUSS-dev/AngelicLove
 	branch = angeliclove
+[submodule "libs/stellardb"]
+	path = libs/stellardb
+	url = https://github.com/REUSS-dev/StellarDB
