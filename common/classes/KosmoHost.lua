@@ -1,12 +1,14 @@
 -- thost
 local thost = {}
 
+local commands = require("scripts.hostCommands_master")
+
 -- documentation
 
 ---@alias HostPeerIndex number
 ---@alias HostAddress string
 
----@alias HostInfoTable {address: HostServer, connections: {[HostPeerIndex]: HostConnectionInfo}, peerIndices: {[integer]: HostPeerIndex}, _peerIndices: table<HostPeerIndex, integer>}
+---@alias HostInfoTable {address: HostServer, connections: {[HostPeerIndex]: HostConnectionInfo}, peerIndices: {[integer]: HostPeerIndex}}
 ---@alias HostConnectionInfo {[1]: string, [2]: integer, [3]: integer} 1 - IP:Port, 2 - connection data, 3 - round trip time
 ---@alias HostServer {address: string, peer: HostPeerIndex}
 
@@ -15,7 +17,7 @@ local thost = {}
 ---@alias HostEventAutoConnect {[1]: HostEventType.AUTO_CONNECT, [2]: string, [3]: HostPeerIndex}
 ---@alias HostEventAutoDisconnect {[1]: HostEventType.AUTO_DISCONNECT, [2]: string}
 ---@alias HostEventResponse {[1]: HostEventType.RESPONSE, [2]: HostCommandReturnIndex, [3]: any}
----@alias HostEventReceive {[1]: HostEventType.RECEIVE, [2]: HostPeerIndex, [3]: string}
+---@alias HostEventReceive {[1]: HostEventType.RECEIVE, [2]: HostPeerIndex, [3]: HostAddress, [4]: string}
 ---@alias HostEventError {[1]: HostEventType.ERROR, [2]: HostCommandReturnIndex, [3]: string}
 
 ---@alias HostCommandName string
@@ -50,15 +52,16 @@ local HOST_CREATE_TIMEOUT = 3
 local COMMAND_DEFAULT_TIMEOUT = 10
 local DUMMY_ROUND_TRIP = 500
 
+local HOST_COMMAND_RESOLVER_FILE = "scripts/hostCommands_slave.lua"
 local HOST_THREAD_FILE = "scripts/thread/t_host.lua"
+
+local COMMAND_RESOLVER_PARSE_PATTERN = "%-%-%[%[ SLAVE SCRIPT BEG ]](.*)$"
 
 -- vars
 
 local uniqueCounter = 0
 
 local thread_code
-
-local commands
 
 ---@enum KosmoHostError
 local Error = {
@@ -69,51 +72,17 @@ local Error = {
 
 -- init
 
+--- produce thread code
 thread_code = love.filesystem.read(HOST_THREAD_FILE) --[[@as string]]
+
+local command_resolver_file = love.filesystem.read(HOST_COMMAND_RESOLVER_FILE) --[[@as string]]
+local command_resolvers = command_resolver_file:match(COMMAND_RESOLVER_PARSE_PATTERN)
+
+thread_code = thread_code:format(command_resolvers)
 
 -- fnc
 
-commands = {
-    getAddress = {
-        delay = 10,
-        callback = function(self, address)
-            self.hostInfo.address = address
-        end
-    },
-    connect = {
-        delay = 0,
-        timeout = 5,
-        callback = function()end
-    },
-    connectServer = {
-        delay = 0,
-        timeout = 5,
-        callback = function()end
-    },
-    disconnect = {
-        delay = 0,
-        timeout = 5,
-        callback = function()end
-    },
-    disconnectServer = {
-        delay = 0,
-        timeout = 5,
-        callback = function()end
-    },
-    getRoundTripTime = {
-        delay = 1,
-        callback = function (self, roundTripInfo)
-            local peer, time = roundTripInfo[1], roundTripInfo[2]
-            if type(peer) == "number" then
-                self.hostInfo.connections[peer][3] = time
-            else
-                for i, peerI in ipairs(peer) do
-                    self.hostInfo.connections[peerI][3] = time[i]
-                end
-            end
-        end
-    }
-}
+
 
 -- classes
 
@@ -165,13 +134,14 @@ function KosmoHost:update(dt)
             self.commandsDelay[commandName] = nil
         end
     end
-    
+
     --- fetch events
     local newEvent = self.eventChannel:pop()
+
     while newEvent do
         if newEvent[1] == HostEventType.RESPONSE then   ---@cast newEvent HostEventResponse
             local command = self.commandsQueued[newEvent[2]]
-        
+
             if command then
                 command.callback(self, newEvent[3], command)
                 self.commandsQueued[newEvent[2]] = nil
@@ -180,35 +150,31 @@ function KosmoHost:update(dt)
             self:onReceive(newEvent[2], newEvent[3])
         elseif newEvent[1] == HostEventType.CONNECT then    ---@cast newEvent HostEventConnect
             self.hostInfo.peerIndices[#self.hostInfo.peerIndices+1] = newEvent[2]
-            self.hostInfo._peerIndices[newEvent[2]] = #self.hostInfo.peerIndices
             self.hostInfo.connections[newEvent[2]] = {newEvent[3], newEvent[4], DUMMY_ROUND_TRIP}
 
             self:command("getRoundTripTime", newEvent[2])
 
-            if self.servers[newEvent[3]] then
-                self.servers[newEvent[3]].peer = newEvent[2]
-            end
-
             self:onConnect(newEvent[2], newEvent[3], newEvent[4])
         elseif newEvent[1] == HostEventType.DISCONNECT then ---@cast newEvent HostEventDisconnect
-            table.remove(self.hostInfo.peerIndices, self.hostInfo._peerIndices[newEvent[2]])
+            for i = #self.hostInfo.peerIndices, 1, -1 do
+                if self.hostInfo.peerIndices[i] == newEvent[2] then
+                    table.remove(self.hostInfo.peerIndices, i)
+                end
+            end
 
             self.hostInfo.connections[newEvent[2]] = nil
-            self.hostInfo._peerIndices[newEvent[2]] = nil
-
-            if self.servers[newEvent[3]] then
-                self.servers[newEvent[3]].peer = nil
-            end
 
             self:onDisconnect(newEvent[2], newEvent[3], newEvent[4])
         elseif newEvent[1] == HostEventType.AUTO_CONNECT then   ---@cast newEvent HostEventAutoConnect
             local name, peer = newEvent[2], newEvent[3]
 
             self.servers[name].peer = peer
+            self:onServerConnect(name, peer)
         elseif newEvent[1] == HostEventType.AUTO_DISCONNECT then   ---@cast newEvent HostEventAutoDisconnect
             local name = newEvent[2]
 
             self.servers[name].peer = nil
+            self:onServerDisconnect(name)
         elseif newEvent[1] == HostEventType.ERROR then  ---@cast newEvent HostEventError
             if self.commandsQueued[newEvent[2]] then
                 print("Command", newEvent[2], "error", newEvent[3])
@@ -343,8 +309,8 @@ end
 --#region virtuals
 
 ---Virtual function, triggers on new peer connected to the host
----@param peerIndex integer
----@param peerAddress string
+---@param peerIndex HostPeerIndex
+---@param peerAddress HostAddress
 ---@param data integer
 ---@diagnostic disable-next-line: unused-local
 function KosmoHost:onConnect(peerIndex, peerAddress, data)
@@ -352,16 +318,31 @@ function KosmoHost:onConnect(peerIndex, peerAddress, data)
 end
 
 ---Virtual function, triggers on new peer disconnected from the host
----@param peerIndex integer
----@param peerAddress string
+---@param peerIndex HostPeerIndex
+---@param peerAddress HostAddress
 ---@param data integer
 ---@diagnostic disable-next-line: unused-local
 function KosmoHost:onDisconnect(peerIndex, peerAddress, data)
     print("Disconnected peer", peerIndex, "address", peerAddress, "data", data)
 end
 
+---Virtual function, triggers on server connection estabilished
+---@param serverName string
+---@param serverIndex HostPeerIndex
+---@diagnostic disable-next-line: unused-local
+function KosmoHost:onServerConnect(serverName, serverIndex)
+    print("Connected server", serverName, "peer", serverIndex)
+end
+
+---Virtual function, triggers on server connection lost
+---@param serverName string
+---@diagnostic disable-next-line: unused-local
+function KosmoHost:onServerDisconnect(serverName)
+    print("Lost connection to server", serverName)
+end
+
 ---Virtual function, triggers on data received from the peer
----@param peerIndex integer
+---@param peerIndex HostPeerIndex
 ---@param data string
 ---@diagnostic disable-next-line: unused-local
 function KosmoHost:onReceive(peerIndex, data)
@@ -370,15 +351,14 @@ end
 
 --#endregion
 
--- thosst fnc
+-- thost fnc
 
-function thost.new(customCommands, threadCommandsScriptString, threadEventScriptString)
+function thost.new()
     local obj = setmetatable({
         unique = uniqueCounter,
         hostInfo = {
             connections = {},
-            peerIndices = {},
-            _peerIndices = {}
+            peerIndices = {}
         },
         servers = {},
 
@@ -387,7 +367,7 @@ function thost.new(customCommands, threadCommandsScriptString, threadEventScript
         commandsQueued = {}
     }, KosmoHost_meta)
 
-    obj.commands = customCommands and setmetatable(customCommands, {__index = commands}) or commands
+    obj.commands = commands
 
     -- Initialize KosmoHost channels
     obj.commandChannelName = CHANNEL_COMMAND_PREFIX:format(uniqueCounter)
@@ -397,7 +377,7 @@ function thost.new(customCommands, threadCommandsScriptString, threadEventScript
     obj.eventChannel = love.thread.getChannel(obj.eventChannelName)
 
     -- Create thread (does not start the thread)
-    obj.thread = love.thread.newThread(obj.threadCode:format("\n" .. (threadCommandsScriptString or ""), "\n" .. (threadEventScriptString or "")))
+    obj.thread = love.thread.newThread(obj.threadCode)
 
     uniqueCounter = uniqueCounter + 1
 

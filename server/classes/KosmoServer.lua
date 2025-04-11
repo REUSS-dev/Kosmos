@@ -13,23 +13,15 @@ local host = require("classes.KosmoHost")
 
 -- consts
 
-local FILE_SERVER_HOST_COMMANDS = "scripts/network/serverCommands.lua"
-local FILE_SERVER_HOST_EVENTS = "scripts/network/serverEvents.lua"
 
--- host commands
-
----@type {[string]:{delay: number, timeout: number?, callback: fun(self: {parent: KosmoServer}, ...)}}
-local server_commands = {
-}
 
 -- vars
 
-local serverCommandScript, serverEventScript
+
 
 -- init
 
-serverCommandScript = love.filesystem.read(FILE_SERVER_HOST_COMMANDS)
-serverEventScript = love.filesystem.read(FILE_SERVER_HOST_EVENTS)
+
 
 -- fnc
 
@@ -88,7 +80,7 @@ function server.new(serverAddress)
 
     obj.started = false
 
-    obj.hostObject = host.new(server_commands, serverCommandScript, serverEventScript)
+    obj.hostObject = host.new()
     obj.hostObject.parent = obj
 
     obj.serverAddress = serverAddress

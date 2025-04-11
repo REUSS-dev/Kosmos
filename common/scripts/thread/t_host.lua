@@ -1,5 +1,7 @@
 -- kosmos host thread
 
+-- consts
+
 local HostEventType = {
     RESPONSE = "response",
     RECEIVE = "receive",
@@ -9,6 +11,11 @@ local HostEventType = {
     AUTO_CONNECT = "autoconnect",
     AUTO_DISCONNECT = "autodisconnect"
 }
+
+-- vars
+
+local auto_reconnect = {}
+local commands = {}
 
 -- init
 
@@ -27,78 +34,8 @@ end
 
 event:push{HostEventType.RESPONSE, 0}
 
--- commands processing
-local auto_reconnect = {}
+-- COMMANDS SCRIPT STARTS HERE %s
 
-local commands = {
-    getAddress = function(rid)
-        event:push{HostEventType.RESPONSE, rid, host:get_socket_address()}
-    end,
-
-    connect = function (rid, args)
-        local address, data = args[1], args[2]
-        host:connect(address, nil, data)
-
-        event:push{HostEventType.RESPONSE, rid, true}
-    end,
-
-    connectServer = function (rid, args)
-        local address, name = args[1], args[2]
-        auto_reconnect[address] = name
-        
-        host:connect(address)
-        
-        event:push{HostEventType.RESPONSE, rid, true}
-    end,
-
-    disconnect = function (rid, args)
-        local cid, data = args[1], args[2]
-        host:get_peer(cid):disconnect(data)
-
-        event:push{HostEventType.RESPONSE, rid, true}
-    end,
-
-    disconnectServer = function (rid, args)
-        local address, cid = args[1], args[2]
-        auto_reconnect[address] = false
-        host:get_peer(cid):disconnect()
-
-        event:push{HostEventType.RESPONSE, rid, true}
-    end,
-
-    getRoundTripTime = function (rid, args)
-        local cid = args[1]
-
-        local response
-
-        if type(cid) == "number" then
-            local peer = host:get_peer(cid)
-
-            if not peer then
-                event:push{HostEventType.ERROR, rid, "No peer with such id: " .. cid}
-            end
-
-            response = peer:round_trip_time()
-        elseif type(cid) == "table" then
-            response = {}
-
-            for i, peerI in ipairs(cid) do
-                local peer = host:get_peer(peerI)
-
-                if not peer then
-                    event:push{HostEventType.ERROR, rid, "No peer with such id: " .. cid}
-                end
-
-                response[i] = peer:round_trip_time()
-            end
-        else
-            event:push{HostEventType.ERROR, rid, "Invalid peer id provided: " .. tostring(cid)}
-        end
-        
-        event:push{HostEventType.RESPONSE, rid, {cid, response}}
-    end
-}
--- COMMAND SCRIPT STARTS HERE %s
 
 -- events processing
 local function connect(connectEvent)
@@ -110,10 +47,8 @@ local function disconnect(disconnectEvent)
 end
 
 local function receive(receiveEvent)
-    event:push{HostEventType.RECEIVE, receiveEvent.peer:index(), tostring(receiveEvent.data)}
+    event:push{HostEventType.RECEIVE, receiveEvent.peer:index(), tostring(receiveEvent.peer), tostring(receiveEvent.data)}
 end
-
--- CUSTOM EVENT PROCESSING SCRIPT STARTS HERE %s
 
 -- update loop
 
