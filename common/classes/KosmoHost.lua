@@ -1,12 +1,17 @@
 -- thost
 local thost = {}
 
+local request = require("scripts.kosmoRequest")
+
 local commands = require("scripts.hostCommands_master")
 
 -- documentation
 
 ---@alias HostPeerIndex number
 ---@alias HostAddress string
+
+---@alias IHost_enabled {api: KosmoApi, [any]: any, validate: fun(token: string, ip: HostAddress, method: string, uid: integer): string?, ApiError?}
+---@alias ApiError {code: integer, message: string}
 
 ---@alias HostInfoTable {address: HostServer, connections: {[HostPeerIndex]: HostConnectionInfo}, peerIndices: {[integer]: HostPeerIndex}}
 ---@alias HostConnectionInfo {[1]: string, [2]: integer, [3]: integer} 1 - IP:Port, 2 - connection data, 3 - round trip time
@@ -87,7 +92,7 @@ thread_code = thread_code:format(command_resolvers)
 -- classes
 
 ---@class KosmoHost
----@field public parent table? Optional parenting object set directly. Useful to address via self.parent when setting custom methods
+---@field public parent IHost_enabled Optional parenting object set directly. Useful to address via self.parent when setting custom methods
 ---@field hostInfo HostInfoTable
 ---@field threadCode string
 ---@field thread love.Thread
@@ -139,6 +144,7 @@ function KosmoHost:update(dt)
     local newEvent = self.eventChannel:pop()
 
     while newEvent do
+        -- Process command response event
         if newEvent[1] == HostEventType.RESPONSE then   ---@cast newEvent HostEventResponse
             local command = self.commandsQueued[newEvent[2]]
 
@@ -146,8 +152,40 @@ function KosmoHost:update(dt)
                 command.callback(self, newEvent[3], command)
                 self.commandsQueued[newEvent[2]] = nil
             end
+
+        -- Process data receive event
         elseif newEvent[1] == HostEventType.RECEIVE then    ---@cast newEvent HostEventReceive
-            self:onReceive(newEvent[2], newEvent[3])
+            local peer, address = newEvent[2], newEvent[3]
+            local method, params, token, version, uid = request.parse(newEvent[4])
+
+            if method then -- kosmorequest parsing success
+                ---@cast token string
+                ---@cast uid integer
+
+                -- Check token
+                local userid, err = self.parent.validate(token, address, method, uid)
+
+                if userid then -- valid token
+                    self.parent.api.v[version][method](self.parent, userid, params, peer, uid)
+
+                else -- invalid token
+                    ---@cast err ApiError
+                    local errorObj = {
+                        message = err.message,
+                        code = err.code,
+                        method = method,
+                        params = params
+                    }
+
+                    local errorResponse = request.generateError(errorObj, token, uid)
+
+                    self:command("send", peer, errorResponse)
+                end
+            else -- Non-kosmorequest
+                self:onReceive(peer, newEvent[3])
+            end
+
+        -- Process connect event
         elseif newEvent[1] == HostEventType.CONNECT then    ---@cast newEvent HostEventConnect
             self.hostInfo.peerIndices[#self.hostInfo.peerIndices+1] = newEvent[2]
             self.hostInfo.connections[newEvent[2]] = {newEvent[3], newEvent[4], DUMMY_ROUND_TRIP}
@@ -155,6 +193,8 @@ function KosmoHost:update(dt)
             self:command("getRoundTripTime", newEvent[2])
 
             self:onConnect(newEvent[2], newEvent[3], newEvent[4])
+
+        -- Process disconnect event
         elseif newEvent[1] == HostEventType.DISCONNECT then ---@cast newEvent HostEventDisconnect
             for i = #self.hostInfo.peerIndices, 1, -1 do
                 if self.hostInfo.peerIndices[i] == newEvent[2] then
@@ -165,16 +205,22 @@ function KosmoHost:update(dt)
             self.hostInfo.connections[newEvent[2]] = nil
 
             self:onDisconnect(newEvent[2], newEvent[3], newEvent[4])
+
+        -- Process server connect event
         elseif newEvent[1] == HostEventType.AUTO_CONNECT then   ---@cast newEvent HostEventAutoConnect
             local name, peer = newEvent[2], newEvent[3]
 
             self.servers[name].peer = peer
             self:onServerConnect(name, peer)
+
+        -- Process server disconnect event
         elseif newEvent[1] == HostEventType.AUTO_DISCONNECT then   ---@cast newEvent HostEventAutoDisconnect
             local name = newEvent[2]
 
             self.servers[name].peer = nil
             self:onServerDisconnect(name)
+
+        -- Process command error event
         elseif newEvent[1] == HostEventType.ERROR then  ---@cast newEvent HostEventError
             if self.commandsQueued[newEvent[2]] then
                 print("Command", newEvent[2], "error", newEvent[3])
@@ -183,6 +229,7 @@ function KosmoHost:update(dt)
         end
 
         newEvent = self.eventChannel:pop()
+
     end
 
     --- tick timeouts
