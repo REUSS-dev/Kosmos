@@ -24,7 +24,7 @@ local commands = require("scripts.hostCommands_master")
 ---@alias HostEventAutoConnect {[1]: HostEventType.AUTO_CONNECT, [2]: string, [3]: HostPeerIndex}
 ---@alias HostEventAutoDisconnect {[1]: HostEventType.AUTO_DISCONNECT, [2]: string, [3]: HostPeerIndex}
 ---@alias HostEventResponse {[1]: HostEventType.RESPONSE, [2]: HostCommandReturnIndex, [3]: any}
----@alias HostEventReceive {[1]: HostEventType.RECEIVE, [2]: HostPeerIndex, [3]: HostAddress, [4]: string}
+---@alias HostEventReceive {[1]: HostEventType.RECEIVE, [2]: HostPeerIndex, [3]: string}
 ---@alias HostEventError {[1]: HostEventType.ERROR, [2]: HostCommandReturnIndex, [3]: string}
 
 ---@alias HostCommandName string
@@ -132,8 +132,23 @@ function KosmoHost:start(bind_address)
     return true
 end
 
+--#region Host update
+
 function KosmoHost:update(dt)
     --- tick delay
+    self:tickCommandDelay(dt)
+
+    --- fetch events
+    self:processEvents()
+
+    --- tick timeouts
+    self:tickCommandTimeouts(dt)
+end
+
+---Tick command cooldowns/delays with given delta time
+---@param dt number
+---@private
+function KosmoHost:tickCommandDelay(dt)
     for command_name, delay in pairs(self.commandsDelay) do
         self.commandsDelay[command_name] = delay - dt
 
@@ -141,91 +156,12 @@ function KosmoHost:update(dt)
             self.commandsDelay[command_name] = nil
         end
     end
+end
 
-    --- fetch events
-    local new_event = self.eventChannel:pop()
-
-    while new_event do
-        -- Process command response event
-        if new_event[1] == HostEventType.RESPONSE then   ---@cast new_event HostEventResponse
-            local command = self.commandsQueued[new_event[2]]
-
-            if command then
-                command.callback(self, new_event[3], command)
-                self.commandsQueued[new_event[2]] = nil
-            end
-
-        -- Process data receive event
-        elseif new_event[1] == HostEventType.RECEIVE then    ---@cast new_event HostEventReceive
-            local peer = new_event[2]
-            local received_request = request.parse(new_event[4])
-
-            if received_request then -- kosmorequest parsing success
-                -- Assign peer
-                received_request:setPeer(peer)
-
-                -- Check token and request validity
-                local verified, err = self.parent:validate(received_request)
-
-                if verified then -- valid token
-                    self.parent:handleRequest(received_request)
-
-                else -- invalid token
-                    local errorResponse = received_request:generateError(err)
-
-                    self:command("send", peer, errorResponse:getPayload())
-                end
-            else -- Non-kosmorequest
-                self:onReceive(peer, new_event[4])
-            end
-
-        -- Process connect event
-        elseif new_event[1] == HostEventType.CONNECT then    ---@cast new_event HostEventConnect
-            self.hostInfo.peerIndices[#self.hostInfo.peerIndices+1] = new_event[2]
-            self.hostInfo.connections[new_event[2]] = {new_event[3], new_event[4], DUMMY_ROUND_TRIP}
-
-            self:command("getRoundTripTime", new_event[2])
-
-            self:onConnect(new_event[2], new_event[3], new_event[4])
-
-        -- Process disconnect event
-        elseif new_event[1] == HostEventType.DISCONNECT then ---@cast new_event HostEventDisconnect
-            for i = #self.hostInfo.peerIndices, 1, -1 do
-                if self.hostInfo.peerIndices[i] == new_event[2] then
-                    table.remove(self.hostInfo.peerIndices, i)
-                end
-            end
-
-            self:onDisconnect(new_event[2], new_event[3], new_event[4])
-            self.hostInfo.connections[new_event[2]] = nil
-
-        -- Process server connect event
-        elseif new_event[1] == HostEventType.AUTO_CONNECT then   ---@cast new_event HostEventAutoConnect
-            local name, peer = new_event[2], new_event[3]
-
-            self.servers[name].peer = peer
-            self:onServerConnect(name, peer)
-
-        -- Process server disconnect event
-        elseif new_event[1] == HostEventType.AUTO_DISCONNECT then   ---@cast new_event HostEventAutoDisconnect
-            local name, peer = new_event[2], new_event[3]
-
-            self:onServerDisconnect(name, peer)
-            self.servers[name].peer = nil
-
-        -- Process command error event
-        elseif new_event[1] == HostEventType.ERROR then  ---@cast new_event HostEventError
-            if self.commandsQueued[new_event[2]] then
-                print("Command", new_event[2], "error", new_event[3])
-                self.commandsQueued[new_event[2]] = nil
-            end
-        end
-
-        new_event = self.eventChannel:pop()
-
-    end
-
-    --- tick timeouts
+---Tick currently processed command timeouts with given delta time
+---@param dt number
+---@private
+function KosmoHost:tickCommandTimeouts(dt)
     for commandId, queuedCommand in pairs(self.commandsQueued) do
         queuedCommand.timeout = queuedCommand.timeout - dt
 
@@ -235,6 +171,152 @@ function KosmoHost:update(dt)
         end
     end
 end
+
+---Process events pulled from event channel of this host
+---@protected
+function KosmoHost:processEvents()
+    local new_event = self.eventChannel:pop()
+
+    while new_event do
+        local event_type = new_event[1]
+
+        if event_type == HostEventType.RESPONSE then
+            self:processEventResponse(new_event)
+
+        elseif event_type == HostEventType.RECEIVE then
+            self:processEventReceive(new_event)
+
+        elseif event_type == HostEventType.CONNECT then
+            self:processEventConnect(new_event)
+
+        elseif event_type == HostEventType.DISCONNECT then
+            self:processEventDisconnect(new_event)
+
+        elseif event_type == HostEventType.AUTO_CONNECT then
+            self:processEventAutoConnect(new_event)
+
+        elseif event_type == HostEventType.AUTO_DISCONNECT then
+            self:processEventAutoDisconnect(new_event)
+
+        elseif event_type == HostEventType.ERROR then
+            self:processEventError(new_event)
+        end
+
+        new_event = self.eventChannel:pop()
+    end
+end
+
+--#region Event processors
+
+---Process event typed RESPONSE
+---@param event HostEventResponse
+---@protected
+function KosmoHost:processEventResponse(event)
+    local return_index, result = event[2], event[3]
+
+    local command = self.commandsQueued[return_index]
+
+    if command then
+        command.callback(self, result, command)
+        self.commandsQueued[return_index] = nil
+    end
+end
+
+---Process event typed ERROR
+---@param event HostEventError
+---@protected
+function KosmoHost:processEventError(event)
+    local return_index, errmsg = event[2], event[3]
+
+    if self.commandsQueued[return_index] then
+        print("Command", return_index, "error", errmsg)
+        self.commandsQueued[return_index] = nil
+    end
+end
+
+---Process event typed CONNECT
+---@param event HostEventConnect
+---@protected
+function KosmoHost:processEventConnect(event)
+    local peer_index, peer_address, hello_int = event[2], event[3], event[4]
+
+    self.hostInfo.peerIndices[#self.hostInfo.peerIndices+1] = peer_index
+    self.hostInfo.connections[peer_index] = {peer_address, hello_int, DUMMY_ROUND_TRIP}
+
+    self:command("getRoundTripTime", peer_index)
+
+    self:onConnect(peer_index, peer_address, hello_int)
+end
+
+---Process event typed DISCONNECT
+---@param event HostEventDisconnect
+---@protected
+function KosmoHost:processEventDisconnect(event)
+    local peer_index, peer_address, goodbye_int = event[2], event[3], event[4]
+
+    for i = #self.hostInfo.peerIndices, 1, -1 do
+        if self.hostInfo.peerIndices[i] == peer_index then
+            table.remove(self.hostInfo.peerIndices, i)
+        end
+    end
+
+    self:onDisconnect(peer_index, peer_address, goodbye_int)
+    self.hostInfo.connections[peer_index] = nil
+end
+
+---Process event typed AUTO_CONNECT
+---@param event HostEventAutoConnect
+---@protected
+function KosmoHost:processEventAutoConnect(event)
+    local name, peer = event[2], event[3]
+
+    self.servers[name].peer = peer
+    self:onServerConnect(name, peer)
+end
+
+---Process event typed AUTO_DISCONNECT
+---@param event HostEventAutoDisconnect
+---@protected
+function KosmoHost:processEventAutoDisconnect(event)
+    local name, peer = event[2], event[3]
+
+    self:onServerDisconnect(name, peer)
+    self.servers[name].peer = nil
+end
+
+---Process event typed RECEIVE
+---@param event HostEventReceive
+---@protected
+function KosmoHost:processEventReceive(event)
+    local peer, data = event[2], event[3]
+
+    local received_request = request.parse(data)
+
+    if received_request then -- kosmorequest parsing success
+        -- Assign peer
+        received_request:setPeer(peer)
+
+        -- Check token and request validity
+        local verified, err = self.parent:validate(received_request)
+
+        if verified then -- valid token
+            self.parent:handleRequest(received_request)
+
+        else -- invalid token
+            local errorResponse = received_request:generateError(err)
+
+            self:command("send", peer, errorResponse:getPayload())
+        end
+    else -- Non-kosmorequest
+        self:onReceive(peer, data)
+    end
+end
+
+--#endregion Event processors
+
+--#endregion Host update
+
+--#region Command dispatcher
 
 ---Dispatch command to the thread
 ---@param commandName HostCommandName Name of the command to be dispatched
@@ -246,14 +328,14 @@ end
 function KosmoHost:dispatchCommand(commandName, callback, ...)
     local command = self.commands[commandName]
 
-    if not command then
+    if not command then -- unknown command
         return nil, Error.UNKNOWN_COMMAND:format(commandName)
     end
 
-    if command.delay > 0 then
-        if self.commandsDelay[commandName] then
+    if command.delay > 0 then -- if command has delay defined
+        if self.commandsDelay[commandName] then -- command is currently on cooldown
             return nil
-        else
+        else -- no cooldown for the command
             self.commandsDelay[commandName] = command.delay
         end
     end
@@ -291,6 +373,8 @@ function KosmoHost:commandCallback(commandName, callback, ...)
     return self:dispatchCommand(commandName, callback, ...)
 end
 
+--#endregion Command dispatcher
+
 function KosmoHost:getAddress()
     return self.hostInfo.address
 end
@@ -319,6 +403,8 @@ function KosmoHost:updateRoundTrip(peerIndexList)
     return self:command("getRoundTripTime", peerIndexList)
 end
 
+--#region Servers management
+
 ---Add a server to the list of host's servers. Host will automatically keep connections to its servers
 ---@param name string
 ---@param address HostAddress
@@ -345,6 +431,8 @@ function KosmoHost:removeServer(name)
 
     self.servers[name] = nil
 end
+
+--#endregion Servers management
 
 --#region virtuals
 
@@ -392,6 +480,20 @@ end
 
 --#endregion
 
+--#region Init
+
+---Assigns and creates channels for the KosmoHost
+---@package
+function KosmoHost:initializeChannels()
+    self.commandChannelName = CHANNEL_COMMAND_PREFIX:format(uniqueCounter)
+    self.eventChannelName = CHANNEL_EVENT_PREFIX:format(uniqueCounter)
+
+    self.commandChannel = love.thread.getChannel(self.commandChannelName)
+    self.eventChannel = love.thread.getChannel(self.eventChannelName)
+end
+
+--#endregion
+
 -- thost fnc
 
 function thost.new()
@@ -411,11 +513,7 @@ function thost.new()
     obj.commands = commands
 
     -- Initialize KosmoHost channels
-    obj.commandChannelName = CHANNEL_COMMAND_PREFIX:format(uniqueCounter)
-    obj.eventChannelName = CHANNEL_EVENT_PREFIX:format(uniqueCounter)
-
-    obj.commandChannel = love.thread.getChannel(obj.commandChannelName)
-    obj.eventChannel = love.thread.getChannel(obj.eventChannelName)
+    obj:initializeChannels()
 
     -- Create thread (does not start the thread)
     obj.thread = love.thread.newThread(obj.threadCode)
