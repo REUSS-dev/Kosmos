@@ -186,10 +186,10 @@ function KosmoRequest:generatePayload()
     local request_string = REQUEST_SIGNATURE
 
     -- Encode version
-    request_string = sbon.encodeUnsignedInteger(self.version)
+    request_string = request_string .. sbon.encodeUnsignedInteger(self.version)
 
     -- Encode request uid
-    request_string = sbon.encodeUnsignedInteger(self.uid)
+    request_string = request_string .. sbon.encodeUnsignedInteger(self.uid)
 
     -- Encode request method
     request_string = request_string .. sbon.encodeString(self.method)
@@ -204,6 +204,22 @@ function KosmoRequest:generatePayload()
     self.payload = request_string
 
     return request_string
+end
+
+function KosmoRequest:generateResponse(params, method)
+    return kosmorequest.new(method or self.method, params, self.token, self.version, self.uid)
+end
+
+function KosmoRequest:generateError(error_header)
+    local error_object = {
+        message = error_header.message,
+        code = error_header.code,
+        method = self.method,
+        params = self.params,
+        version = self.version
+    }
+
+    return kosmorequest.new(ERROR_METHOD, error_object, self.token, ERROR_VER, self.uid)
 end
 
 -- kosmorequest fnc
@@ -240,7 +256,8 @@ function kosmorequest.parse(bytes)
         return
     end
 
-    local decoded_signature = sbon.decodeString(requestPtr, #REQUEST_SIGNATURE) 
+    local decoded_signature
+    decoded_signature, requestPtr = sbon.decodeString(requestPtr, #REQUEST_SIGNATURE) 
     if not (decoded_signature == REQUEST_SIGNATURE) then
         return
     end
@@ -284,14 +301,6 @@ function kosmorequest.parse(bytes)
     params = sbon.decodeMap(requestPtr)
 
     return kosmorequest.new(method, params, token, version, uid)
-end
-
-function kosmorequest.newResponse(method, params, token, uid)
-    return kosmorequest.new(method, params, token, default_version, uid)
-end
-
-function kosmorequest.newError(errorObject, token, uid)
-    return kosmorequest.new(ERROR_METHOD, errorObject, token, ERROR_VER, uid)
 end
 
 return kosmorequest
