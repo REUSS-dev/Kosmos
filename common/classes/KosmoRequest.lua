@@ -39,6 +39,8 @@ request_uid = 0
 ---@field token string Auth token request will use
 ---@field version integer API version this request asks
 ---@field uid integer Unique inidividual indentifier of this request
+---@field peer HostPeerIndex? Index of a peer whom this request originates from. Must be set manually
+---@field clid integer? Client ID associated with token of the request (must be assigned after successful authorization and validation)
 ---@field payload string? Generated ready-to-send KosmoRequest encoded payload. Can be nil, if not generated yet
 local KosmoRequest = {}
 local KosmoRequest_meta = { __index = KosmoRequest }
@@ -128,6 +130,36 @@ function KosmoRequest:setUid(new_uid)
     return self
 end
 
+---Returns currently set peer in this request
+---@return HostPeerIndex? peer uid integer
+function KosmoRequest:getPeer()
+    return self.peer
+end
+
+---Sets new peer for this request
+---@param new_peer HostPeerIndex New peer index value
+---@return KosmoRequest self This KosmoRequest object
+function KosmoRequest:setPeer(new_peer)
+    self.peer = new_peer
+
+    return self
+end
+
+--Returns currently set client id of this request
+---@return integer? clid client id integer
+function KosmoRequest:getClientID()
+    return self.clid
+end
+
+---Sets client id for this request
+---@param new_clid integer New client id value
+---@return KosmoRequest self This KosmoRequest object
+function KosmoRequest:setClientID(new_clid)
+    self.peer = new_clid
+
+    return self
+end
+
 ---Invalidates cached payload string (must be called on change of any KosmoRequest variables)
 ---@protected
 function KosmoRequest:invalidatePayload()
@@ -197,11 +229,11 @@ function kosmorequest.setAPIversion(version)
 end
 
 ---Parse kosmo request string
----@param request KosmoRequestBytes
+---@param bytes KosmoRequestBytes
 ---@return KosmoRequest? kosmorequest A parsed kosmorequest object if success, nil otherwise
-function kosmorequest.parse(request)
-    local requestPtr = ffi.cast("const uint8_t*", request)
-    local endPtr = requestPtr + #request
+function kosmorequest.parse(bytes)
+    local requestPtr = ffi.cast("const uint8_t*", bytes)
+    local endPtr = requestPtr + #bytes
 
     -- Validate and parse signature
     if not sbon.validateString(requestPtr, endPtr, #REQUEST_SIGNATURE) then

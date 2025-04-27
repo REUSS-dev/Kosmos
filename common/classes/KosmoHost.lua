@@ -1,7 +1,7 @@
 -- thost
 local thost = {}
 
-local request = require("scripts.kosmoRequest")
+local request = require("classes.KosmoRequest")
 
 local commands = require("scripts.hostCommands_master")
 
@@ -10,7 +10,9 @@ local commands = require("scripts.hostCommands_master")
 ---@alias HostPeerIndex number
 ---@alias HostAddress string
 
----@alias IHost_enabled {api: KosmoApi, [any]: any, validate: fun(token: string, ip: HostAddress, method: string, uid: integer): string?, ApiError?}
+---@alias IHost_enabled_validate fun(received_request: KosmoRequest): string?, ApiError?
+---@alias IHost_enabled_handle fun(received_request: KosmoRequest)
+---@alias IHost_enabled {handleRequest: IHost_enabled_handle, [any]: any, validate: IHost_enabled_validate}
 ---@alias ApiError {code: integer, message: string}
 
 ---@alias HostInfoTable {address: HostServer, connections: {[HostPeerIndex]: HostConnectionInfo}, peerIndices: {[integer]: HostPeerIndex}}
@@ -132,103 +134,103 @@ end
 
 function KosmoHost:update(dt)
     --- tick delay
-    for commandName, delay in pairs(self.commandsDelay) do
-        self.commandsDelay[commandName] = delay - dt
+    for command_name, delay in pairs(self.commandsDelay) do
+        self.commandsDelay[command_name] = delay - dt
 
-        if self.commandsDelay[commandName] <= 0 then
-            self.commandsDelay[commandName] = nil
+        if self.commandsDelay[command_name] <= 0 then
+            self.commandsDelay[command_name] = nil
         end
     end
 
     --- fetch events
-    local newEvent = self.eventChannel:pop()
+    local new_event = self.eventChannel:pop()
 
-    while newEvent do
+    while new_event do
         -- Process command response event
-        if newEvent[1] == HostEventType.RESPONSE then   ---@cast newEvent HostEventResponse
-            local command = self.commandsQueued[newEvent[2]]
+        if new_event[1] == HostEventType.RESPONSE then   ---@cast new_event HostEventResponse
+            local command = self.commandsQueued[new_event[2]]
 
             if command then
-                command.callback(self, newEvent[3], command)
-                self.commandsQueued[newEvent[2]] = nil
+                command.callback(self, new_event[3], command)
+                self.commandsQueued[new_event[2]] = nil
             end
 
         -- Process data receive event
-        elseif newEvent[1] == HostEventType.RECEIVE then    ---@cast newEvent HostEventReceive
-            local peer, address = newEvent[2], newEvent[3]
-            local method, params, token, version, uid = request.parse(newEvent[4])
+        elseif new_event[1] == HostEventType.RECEIVE then    ---@cast new_event HostEventReceive
+            local peer = new_event[2]
+            local received_request = request.parse(new_event[4])
 
-            if method then -- kosmorequest parsing success
-                ---@cast token string
-                ---@cast uid integer
+            if received_request then -- kosmorequest parsing success
+                -- Assign peer
+                received_request:setPeer(peer)
 
-                -- Check token
-                local userid, err = self.parent.validate(token, address, method, uid)
+                -- Check token and request validity
+                local verified, err = self.parent.validate(received_request)
 
-                if userid then -- valid token
-                    self.parent.api.v[version][method](self.parent, userid, params, peer, uid)
+                if verified then -- valid token
+                    self.parent.handleRequest(received_request)
 
                 else -- invalid token
                     ---@cast err ApiError
                     local errorObj = {
                         message = err.message,
                         code = err.code,
-                        method = method,
-                        params = params
+                        method = received_request:getMethod(),
+                        params = received_request:getParams()
                     }
 
-                    local errorResponse = request.generateError(errorObj, token, uid)
+                    local errorResponse = request.newError(errorObj, received_request:getToken(), received_request:getUid())
 
                     self:command("send", peer, errorResponse)
                 end
             else -- Non-kosmorequest
-                self:onReceive(peer, newEvent[3])
+                self:onReceive(peer, new_event[3])
             end
 
         -- Process connect event
-        elseif newEvent[1] == HostEventType.CONNECT then    ---@cast newEvent HostEventConnect
-            self.hostInfo.peerIndices[#self.hostInfo.peerIndices+1] = newEvent[2]
-            self.hostInfo.connections[newEvent[2]] = {newEvent[3], newEvent[4], DUMMY_ROUND_TRIP}
+        elseif new_event[1] == HostEventType.CONNECT then    ---@cast new_event HostEventConnect
+            self.hostInfo.peerIndices[#self.hostInfo.peerIndices+1] = new_event[2]
+            self.hostInfo.connections[new_event[2]] = {new_event[3], new_event[4], DUMMY_ROUND_TRIP}
 
-            self:command("getRoundTripTime", newEvent[2])
+            self:command("getRoundTripTime", new_event[2])
 
-            self:onConnect(newEvent[2], newEvent[3], newEvent[4])
+            self:onConnect(new_event[2], new_event[3], new_event[4])
 
         -- Process disconnect event
-        elseif newEvent[1] == HostEventType.DISCONNECT then ---@cast newEvent HostEventDisconnect
+        elseif new_event[1] == HostEventType.DISCONNECT then ---@cast new_event HostEventDisconnect
             for i = #self.hostInfo.peerIndices, 1, -1 do
-                if self.hostInfo.peerIndices[i] == newEvent[2] then
+                if self.hostInfo.peerIndices[i] == new_event[2] then
                     table.remove(self.hostInfo.peerIndices, i)
                 end
             end
 
-            self.hostInfo.connections[newEvent[2]] = nil
+            self.hostInfo.connections[new_event[2]] = nil
 
-            self:onDisconnect(newEvent[2], newEvent[3], newEvent[4])
+            self:onDisconnect(new_event[2], new_event[3], new_event[4])
 
         -- Process server connect event
-        elseif newEvent[1] == HostEventType.AUTO_CONNECT then   ---@cast newEvent HostEventAutoConnect
-            local name, peer = newEvent[2], newEvent[3]
+        elseif new_event[1] == HostEventType.AUTO_CONNECT then   ---@cast new_event HostEventAutoConnect
+            local name, peer = new_event[2], new_event[3]
 
             self.servers[name].peer = peer
             self:onServerConnect(name, peer)
 
         -- Process server disconnect event
-        elseif newEvent[1] == HostEventType.AUTO_DISCONNECT then   ---@cast newEvent HostEventAutoDisconnect
-            local name = newEvent[2]
+        elseif new_event[1] == HostEventType.AUTO_DISCONNECT then   ---@cast new_event HostEventAutoDisconnect
+            local name = new_event[2]
 
             self.servers[name].peer = nil
             self:onServerDisconnect(name)
 
         -- Process command error event
-        elseif newEvent[1] == HostEventType.ERROR then  ---@cast newEvent HostEventError
-            if self.commandsQueued[newEvent[2]] then
-                print("Command", newEvent[2], "error", newEvent[3])
-                self.commandsQueued[newEvent[2]] = nil
+        elseif new_event[1] == HostEventType.ERROR then  ---@cast new_event HostEventError
+            if self.commandsQueued[new_event[2]] then
+                print("Command", new_event[2], "error", new_event[3])
+                self.commandsQueued[new_event[2]] = nil
             end
         end
 
-        newEvent = self.eventChannel:pop()
+        new_event = self.eventChannel:pop()
 
     end
 
