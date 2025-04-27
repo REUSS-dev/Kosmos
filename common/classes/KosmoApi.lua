@@ -30,14 +30,16 @@ local SCOPE_GUEST = "guest"
 
 -- fnc
 
-
+local function version_defaulter(self, _)
+    return self[self.default]
+end
 
 -- classes
 
 ---@class KosmoApi Versioned API object
 ---@field private path string Path to folder with API realizations
 ---@field private defaultVersion ApiVersion Fallback version if unknown API version is given
----@field public v table<ApiVersion, table<ApiMethodName, function>> Table with all version realizations
+---@field public v {default: ApiVersion, [ApiVersion]: table<ApiMethodName, function>} Table with all version realizations
 ---@field private scope table<ApiMethodName, ApiScopeGroup> Method scopes.
 ---@field private fallback table<ApiVersion, ApiVersion> Map of loaded versions (keys) to their fallback versions (values)
 local KosmoApi = {}
@@ -49,8 +51,7 @@ end
 
 function KosmoApi:setDefaultVersion(new_default)
     self.defaultVersion = new_default
-
-    setmetatable(self.v, { __index = self.v[new_default] })
+    self.v.default = new_default
 end
 
 ---Caches version table to speed up lookups
@@ -133,6 +134,8 @@ function KosmoApi:init()
     end
 
     self:setDefaultVersion(self.defaultVersion)
+
+    setmetatable(self.v, { __index = version_defaulter })
 end
 
 -- kosmoapi fnc
