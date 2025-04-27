@@ -1,0 +1,3 @@
+return {
+	introduceToken = "guest"
+}

@@ -5,7 +5,9 @@ local kosmoapi = {}
 
 -- documentation
 
-
+---@alias ApiVersion integer
+---@alias ApiMethodName string
+---@alias ApiScopeGroup string
 
 -- config
 
@@ -14,6 +16,9 @@ local AUTO_CACHE_LAST = true    -- Whether the last version of API should always
 -- consts
 
 local VERSION_PATTERN = "(%d+)"
+local SCOPE_FILE = "scopes.lua"
+
+local SCOPE_GUEST = "guest"
 
 -- vars
 
@@ -31,9 +36,10 @@ local VERSION_PATTERN = "(%d+)"
 
 ---@class KosmoApi Versioned API object
 ---@field private path string Path to folder with API realizations
----@field private defaultVersion integer Fallback version if unknown API version is given
----@field public v table<integer, table<string, function>> Table with all version realizations
----@field private fallback table<integer, integer>
+---@field private defaultVersion ApiVersion Fallback version if unknown API version is given
+---@field public v table<ApiVersion, table<ApiMethodName, function>> Table with all version realizations
+---@field private scope table<ApiMethodName, ApiScopeGroup> Method scopes.
+---@field private fallback table<ApiVersion, ApiVersion> Map of loaded versions (keys) to their fallback versions (values)
 local KosmoApi = {}
 local KosmoApi_meta = { __index = KosmoApi }
 
@@ -65,6 +71,26 @@ function KosmoApi:cacheVersion(version)
     end
 end
 
+---Checks whether provided method satisfies scope limitations of provided scope map
+---@param method ApiMethodName
+---@param token KosmoToken?
+---@return boolean? scope_status true, if method is within provided token's scope; false, if it is outside of provided token's scope; nil, if such method does not exist
+function KosmoApi:isMethodWithinScope(method, token)
+    if self.scope[method] == SCOPE_GUEST then
+        return true
+    end
+
+    if not token then
+        return false
+    end
+
+    if not self.scope[method] then
+        return nil
+    end
+
+    return token:checkScope(self.scope[method])
+end
+
 function KosmoApi:init()
     local items = love.filesystem.getDirectoryItems(self.path)
 
@@ -73,18 +99,24 @@ function KosmoApi:init()
     for _, version_filename in ipairs(items) do
         local parsed_version = string.match(version_filename, VERSION_PATTERN)
 
-        if parsed_version then
+        if parsed_version then -- another api version file
             local version = tonumber(parsed_version) --[[@as integer]]
             local realization_chunk = love.filesystem.load(self.path .. "/" .. version_filename)
 
             local realization, fallback_version = realization_chunk()
 
-            self.v[version] = realization
+            self.v[version] = realization or {}
             self.fallback[version] = fallback_version
 
             last = math.max(version, last or -1)
+        elseif version_filename == SCOPE_FILE then -- scopes file
+            local scopes_chunk = love.filesystem.load(self.path .. "/" .. version_filename)
+
+            self.scope = scopes_chunk()
         end
     end
+
+    assert(self.scope, "API methods scope file not found for api at " .. self.path)
 
     self.defaultVersion = self.defaultVersion or last
 
@@ -108,11 +140,13 @@ end
 function kosmoapi.new(api_path)
     assert(api_path, "API path not provided!")
 
-    local obj = setmetatable({ path = api_path, v = {}, fallback = {} }, KosmoApi_meta)
+    local obj = setmetatable({ path = api_path, v = {}, fallback = {}}, KosmoApi_meta)
 
     obj:init()
 
     return obj
 end
+
+kosmoapi.SCOPE_GUEST = SCOPE_GUEST
 
 return kosmoapi
