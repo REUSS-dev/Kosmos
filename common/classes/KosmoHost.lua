@@ -22,7 +22,7 @@ local commands = require("scripts.hostCommands_master")
 ---@alias HostEventConnect {[1]: HostEventType.CONNECT, [2]: HostPeerIndex, [3]: HostAddress, [4]: integer}
 ---@alias HostEventDisconnect {[1]: HostEventType.DISCONNECT, [2]: HostPeerIndex, [3]: HostAddress, [4]: integer}
 ---@alias HostEventAutoConnect {[1]: HostEventType.AUTO_CONNECT, [2]: string, [3]: HostPeerIndex}
----@alias HostEventAutoDisconnect {[1]: HostEventType.AUTO_DISCONNECT, [2]: string}
+---@alias HostEventAutoDisconnect {[1]: HostEventType.AUTO_DISCONNECT, [2]: string, [3]: HostPeerIndex}
 ---@alias HostEventResponse {[1]: HostEventType.RESPONSE, [2]: HostCommandReturnIndex, [3]: any}
 ---@alias HostEventReceive {[1]: HostEventType.RECEIVE, [2]: HostPeerIndex, [3]: HostAddress, [4]: string}
 ---@alias HostEventError {[1]: HostEventType.ERROR, [2]: HostCommandReturnIndex, [3]: string}
@@ -204,9 +204,8 @@ function KosmoHost:update(dt)
                 end
             end
 
-            self.hostInfo.connections[new_event[2]] = nil
-
             self:onDisconnect(new_event[2], new_event[3], new_event[4])
+            self.hostInfo.connections[new_event[2]] = nil
 
         -- Process server connect event
         elseif new_event[1] == HostEventType.AUTO_CONNECT then   ---@cast new_event HostEventAutoConnect
@@ -217,10 +216,10 @@ function KosmoHost:update(dt)
 
         -- Process server disconnect event
         elseif new_event[1] == HostEventType.AUTO_DISCONNECT then   ---@cast new_event HostEventAutoDisconnect
-            local name = new_event[2]
+            local name, peer = new_event[2], new_event[3]
 
+            self:onServerDisconnect(name, peer)
             self.servers[name].peer = nil
-            self:onServerDisconnect(name)
 
         -- Process command error event
         elseif new_event[1] == HostEventType.ERROR then  ---@cast new_event HostEventError
@@ -385,9 +384,10 @@ end
 
 ---Virtual function, triggers on server connection lost
 ---@param serverName string
+---@param serverIndex HostPeerIndex
 ---@diagnostic disable-next-line: unused-local
-function KosmoHost:onServerDisconnect(serverName)
-    print("Lost connection to server", serverName)
+function KosmoHost:onServerDisconnect(serverName, serverIndex)
+    print("Lost connection to server", serverName, serverIndex)
 end
 
 ---Virtual function, triggers on data received from the peer

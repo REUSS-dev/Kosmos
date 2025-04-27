@@ -77,7 +77,7 @@ while true do
             end
         elseif newEvent.type == "disconnect" then
             if auto_reconnect[tostring(newEvent.peer)] then
-                event:push{HostEventType.AUTO_DISCONNECT, auto_reconnect[tostring(newEvent.peer)]}
+                event:push{HostEventType.AUTO_DISCONNECT, auto_reconnect[tostring(newEvent.peer)], newEvent.peer:index()}
                 host:connect(tostring(newEvent.peer))
             else
                 disconnect(newEvent)
