@@ -10,8 +10,8 @@ local commands = require("scripts.hostCommands_master")
 ---@alias HostPeerIndex number
 ---@alias HostAddress string
 
----@alias IHost_enabled_validate fun(received_request: KosmoRequest): string?, ApiError?
----@alias IHost_enabled_handle fun(received_request: KosmoRequest)
+---@alias IHost_enabled_validate fun(self: IHost_enabled, received_request: KosmoRequest): string?, ApiError?
+---@alias IHost_enabled_handle fun(self: IHost_enabled, received_request: KosmoRequest)
 ---@alias IHost_enabled {handleRequest: IHost_enabled_handle, [any]: any, validate: IHost_enabled_validate}
 ---@alias ApiError {code: integer, message: string}
 
@@ -165,26 +165,18 @@ function KosmoHost:update(dt)
                 received_request:setPeer(peer)
 
                 -- Check token and request validity
-                local verified, err = self.parent.validate(received_request)
+                local verified, err = self.parent:validate(received_request)
 
                 if verified then -- valid token
-                    self.parent.handleRequest(received_request)
+                    self.parent:handleRequest(received_request)
 
                 else -- invalid token
-                    ---@cast err ApiError
-                    local errorObj = {
-                        message = err.message,
-                        code = err.code,
-                        method = received_request:getMethod(),
-                        params = received_request:getParams()
-                    }
+                    local errorResponse = received_request:generateError(err)
 
-                    local errorResponse = request.newError(errorObj, received_request:getToken(), received_request:getUid())
-
-                    self:command("send", peer, errorResponse)
+                    self:command("send", peer, errorResponse:getPayload())
                 end
             else -- Non-kosmorequest
-                self:onReceive(peer, new_event[3])
+                self:onReceive(peer, new_event[4])
             end
 
         -- Process connect event

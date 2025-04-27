@@ -47,7 +47,7 @@ commands = {
 
     disconnect = function (rid, args)
         local cid, data = args[1], args[2]
-        host:get_peer(cid):disconnect(data)
+        host:get_peer(cid):disconnect(data or 0)
 
         event:push{HostEventType.RESPONSE, rid, true}
     end,

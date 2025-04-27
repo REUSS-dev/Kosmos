@@ -6,6 +6,8 @@ function love.load()
     gui.loadExternalObjects()
     gui.loadExternalObjects("ui")
 
+    KOSMO_DEBUG = true
+
     local font = love.graphics.newFont("resources/font.ttf", 18)
 
     local lookfor_folder = ""
@@ -44,7 +46,7 @@ function love.load()
             text = "Сервер",
             font = font,
             action = function ()
-                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;server/?.lua")
+                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;server/?.lua;common/?/init.lua;server/?/init.lua")
                 lookfor_folder = "server"
                 require("server")
                 gui:unregisterAll()
@@ -61,7 +63,7 @@ function love.load()
             text = "Клиент",
             font = font,
             action = function ()
-                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;client/?.lua")
+                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;client/?.lua;common/?/init.lua;client/?/init.lua")
                 lookfor_folder = "client"
                 require("client")
                 gui:unregisterAll()

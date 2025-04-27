@@ -77,7 +77,7 @@ end
 ---@class KosmoTokenCollection
 ---@field tokens table<TokenString, KosmoToken>
 local KosmoTokenCollection = {}
-local KosmoTokenCollection_meta = { __meta = KosmoTokenCollection }
+local KosmoTokenCollection_meta = { __index = KosmoTokenCollection }
 
 ---Add a token to a token collection
 ---@param new_token KosmoToken
@@ -100,6 +100,16 @@ function KosmoTokenCollection:delete(token_or_string)
         end
     else
         error("Arg 1 to KosmoTokenCollection:delete() string or KosmoToken expected, got " .. type(token_or_string))
+    end
+end
+
+---Deletes all tokens associated with given peer
+---@param peer HostPeerIndex
+function KosmoTokenCollection:deletePeerTokens(peer)
+    for token_bytes, t in pairs(self.tokens) do
+        if t:checkOwner(peer) then
+            self:delete(token_bytes)
+        end
     end
 end
 
