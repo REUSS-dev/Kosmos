@@ -47,7 +47,7 @@ local function disconnect(disconnectEvent)
 end
 
 local function receive(receiveEvent)
-    event:push{HostEventType.RECEIVE, receiveEvent.peer:index(), tostring(receiveEvent.peer), tostring(receiveEvent.data)}
+    event:push{HostEventType.RECEIVE, receiveEvent.peer:index(), tostring(receiveEvent.data)}
 end
 
 -- update loop
