@@ -122,10 +122,14 @@ function KosmoApi:init()
     self.defaultVersion = self.defaultVersion or last
 
     for version, realization in pairs(self.v) do
-        self.fallback[version] = self.fallback[version] or rawget(self.v, version - 1) and (version - 1)
+        if version ~= "default" then
+            ---@cast realization table
 
-        if self.fallback[version] then
-            setmetatable(realization, { __index = self.v[self.fallback[version]] })
+            self.fallback[version] = self.fallback[version] or rawget(self.v, version - 1) and (version - 1)
+
+            if self.fallback[version] then
+                setmetatable(realization, { __index = self.v[self.fallback[version]] })
+            end
         end
     end
 
