@@ -15,6 +15,7 @@ local REQUEST_SIGNATURE = "KOSMOREQUEST"
 local TOKEN_PLACEHOLDER = ""
 
 local ERROR_METHOD = "error"
+local RESPONSE_METHOD = "response"
 local ERROR_VER = 0
 
 -- vars
@@ -35,13 +36,13 @@ request_uid = 0
 
 ---@class KosmoRequest Unified KosmoRequest object
 ---@field method string Name of the method of the request
----@field params table<string, any> Map of given method parameters
+---@field params KosmoRequestParams Map of method parameters
 ---@field token string Auth token request will use
----@field version integer API version this request asks
+---@field version integer API version this request will ask for
 ---@field uid integer Unique inidividual indentifier of this request
 ---@field peer HostPeerIndex? Index of a peer whom this request originates from. Must be set manually
 ---@field clid integer? Client ID associated with token of the request (must be assigned after successful authorization and validation)
----@field payload string? Generated ready-to-send KosmoRequest encoded payload. Can be nil, if not generated yet
+---@field payload string? Generated ready-to-send KosmoRequest encoded binary payload. Can be nil, if not generated yet
 local KosmoRequest = {}
 local KosmoRequest_meta = { __index = KosmoRequest }
 
@@ -160,14 +161,17 @@ function KosmoRequest:setClientID(new_clid)
     return self
 end
 
+--#region Payload generation
+
 ---Invalidates cached payload string (must be called on change of any KosmoRequest variables)
 ---@protected
 function KosmoRequest:invalidatePayload()
     self.payload = nil
 end
 
----Returns KosmoRequest reqdy-to-send request payload
----@return string payloadBytes
+---Returns KosmoRequest reqdy-to-sends payload binary string
+---@return string payloadBytes Payload binary string
+---@public
 function KosmoRequest:getPayload()
     if self.payload then
         return self.payload
@@ -176,8 +180,8 @@ function KosmoRequest:getPayload()
     return self:generatePayload()
 end
 
----Generates and caches this KosmoRequest's payload
----@return string payloadBytes
+---Generates and caches payload containing this KosmoRequest
+---@return string payloadBytes Payload binary string
 ---@protected
 function KosmoRequest:generatePayload()
     assert(type(self.method) == "string", "Invalid parameter 1 for generating request payload: method must be a string value. Method type: " .. type(self.method))
@@ -206,11 +210,23 @@ function KosmoRequest:generatePayload()
     return request_string
 end
 
-function KosmoRequest:generateResponse(params, method)
-    return kosmorequest.new(method or self.method, params, self.token, self.version, self.uid)
+--#endregion Payload generation
+
+--#region Child requests
+
+---Generate response to this request.
+---@param params KosmoRequestParams Map of params response KosmoRequest will have
+---@return KosmoRequest Response KosmoRequest object
+---@public
+function KosmoRequest:createResponse(params)
+    return kosmorequest.new(RESPONSE_METHOD, params, self.token, self.version, self.uid)
 end
 
-function KosmoRequest:generateError(error_header)
+---Generate error response to this request
+---@param error_header ApiError Structure, containing message and code of the error
+---@return KosmoRequest new_KosmoRequest Error response KosmoRequest object
+---@public
+function KosmoRequest:createError(error_header)
     local error_object = {
         message = error_header.message,
         code = error_header.code,
@@ -222,8 +238,29 @@ function KosmoRequest:generateError(error_header)
     return kosmorequest.new(ERROR_METHOD, error_object, self.token, ERROR_VER, self.uid)
 end
 
+---Returns whether this KosmoRequest is a response to another request.
+---@return integer|false responseUid UID of request this response is meant for, if success; false otherwise
+function KosmoRequest:isResponse()
+    return self.method == RESPONSE_METHOD and self.uid
+end
+
+---Returns whether this KosmoRequest is an error response to another request.
+---@return integer|false responseUid UID of request this error is meant for, if success; false otherwise
+function KosmoRequest:isError()
+    return self.method == ERROR_METHOD and self.uid
+end
+
+--#endregion Child requests
+
 -- kosmorequest fnc
 
+---Create new KosmoRequest object with its contents.
+---@param method string Method new request will request access to.
+---@param params KosmoRequestParams Map of parameters of new KosmoRequest.
+---@param token string KosmoToken bytes.
+---@param version integer API version new request asks for.
+---@param uid integer? Optional given unique identifier
+---@return KosmoRequest new_KosmoRequest New KosmoRequest object
 function kosmorequest.new(method, params, token, version, uid)
     local new_request = setmetatable({
         method = method,
@@ -239,13 +276,13 @@ function kosmorequest.new(method, params, token, version, uid)
 end
 
 ---Set default api version that is used when API version is not provided
----@param version integer
+---@param version integer New default API version
 function kosmorequest.setAPIversion(version)
     default_version = version
 end
 
 ---Parse kosmo request string
----@param bytes KosmoRequestBytes
+---@param bytes KosmoRequestBytes Compiled KosmoRequest string
 ---@return KosmoRequest? kosmorequest A parsed kosmorequest object if success, nil otherwise
 function kosmorequest.parse(bytes)
     local requestPtr = ffi.cast("const uint8_t*", bytes)

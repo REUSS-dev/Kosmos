@@ -135,7 +135,7 @@ end
 ---@param params table<string, any>
 ---@param method string? Oprional response method alter
 function KosmoServer:response(request, params, method)
-    local response_request = request:generateResponse(params, method)
+    local response_request = request:createResponse(params, method)
 
     self.hostObject:command("send", request:getPeer(), response_request:getPayload())
 end
@@ -144,7 +144,7 @@ end
 ---@param request KosmoRequest
 ---@param error_header {message: string, code: integer}
 function KosmoServer:responseError(request, error_header)
-    local response_request = request:generateError(error_header)
+    local response_request = request:createError(error_header)
 
     self.hostObject:command("send", request:getPeer(), response_request:getPayload())
 end
