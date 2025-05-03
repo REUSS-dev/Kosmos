@@ -1,38 +1,29 @@
 local commands
 
-local function nop()
-end
-
 commands = {
     getAddress = {
         delay = 10,
-        callback = function(self, address)
-            self.hostInfo.address = address
+        callback = function(task, address)
+            task.self.hostInfo.address = address
         end
     },
     connect = {
         delay = 0,
-        timeout = 5,
-        callback = nop
     },
     connectServer = {
         delay = 0,
-        timeout = 5,
-        callback = nop
     },
     disconnect = {
         delay = 0,
-        timeout = 5,
-        callback = nop
     },
     disconnectServer = {
         delay = 0,
-        timeout = 5,
-        callback = nop
     },
     getRoundTripTime = {
         delay = 1,
-        callback = function (self, roundTripInfo)
+        callback = function (task, roundTripInfo)
+            local self = task.self
+            
             local peer, time = roundTripInfo[1], roundTripInfo[2]
             if type(peer) == "number" then
                 self.hostInfo.connections[peer][3] = time
@@ -45,8 +36,6 @@ commands = {
     },
     send = {
         delay = 0,
-        timeout = 5,
-        callback = nop
     }
 }
 

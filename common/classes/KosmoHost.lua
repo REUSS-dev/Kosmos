@@ -2,6 +2,7 @@
 local thost = {}
 
 local request = require("classes.KosmoRequest")
+local async = require("scripts.kosmonaut")
 
 local commands = require("scripts.hostCommands_master")
 
@@ -56,7 +57,7 @@ local CHANNEL_COMMAND_PREFIX = "KosmohostDo%d"
 local CHANNEL_EVENT_PREFIX = "KosmohostStatus%d"
 
 local HOST_CREATE_TIMEOUT = 3
-local COMMAND_DEFAULT_TIMEOUT = 10
+local COMMAND_DEFAULT_TIMEOUT = 5
 local DUMMY_ROUND_TRIP = 500
 
 local HOST_COMMAND_RESOLVER_FILE = "scripts/hostCommands_slave.lua"
@@ -104,8 +105,7 @@ thread_code = thread_code:format(command_resolvers)
 ---@field eventChannel love.Channel
 ---@field servers table<string, HostServer> List of server hosts which KosmoHost will constantly try to auto-reconnect to.
 ---@field commands {[HostCommandName]: HostCommandPrototype} Host command set
----@field commandUnique QueuedCommandID Next issued command ID
----@field commandsQueued {[QueuedCommandID]: HostQueuedCommand}
+---@field commandQueue AsyncAgent Async agent for commands to the child thread
 ---@field commandsDelay {[HostCommandName]: number}
 local KosmoHost = { threadCode = thread_code}
 local KosmoHost_meta = { __index = KosmoHost }
@@ -141,8 +141,8 @@ function KosmoHost:update(dt)
     --- fetch events
     self:processEvents()
 
-    --- tick timeouts
-    self:tickCommandTimeouts(dt)
+    --- tick async agent
+    self.commandQueue:update(dt)
 end
 
 ---Tick command cooldowns/delays with given delta time
@@ -154,20 +154,6 @@ function KosmoHost:tickCommandDelay(dt)
 
         if self.commandsDelay[command_name] <= 0 then
             self.commandsDelay[command_name] = nil
-        end
-    end
-end
-
----Tick currently processed command timeouts with given delta time
----@param dt number
----@private
-function KosmoHost:tickCommandTimeouts(dt)
-    for commandId, queuedCommand in pairs(self.commandsQueued) do
-        queuedCommand.timeout = queuedCommand.timeout - dt
-
-        if queuedCommand.timeout <= 0 then
-            self.commandsQueued[commandId] = nil
-            print("Command", commandId, "timeout")
         end
     end
 end
@@ -214,12 +200,7 @@ end
 function KosmoHost:processEventResponse(event)
     local return_index, result = event[2], event[3]
 
-    local command = self.commandsQueued[return_index]
-
-    if command then
-        command.callback(self, result, command)
-        self.commandsQueued[return_index] = nil
-    end
+    self.commandQueue:finishTask(return_index, result)
 end
 
 ---Process event typed ERROR
@@ -228,10 +209,7 @@ end
 function KosmoHost:processEventError(event)
     local return_index, errmsg = event[2], event[3]
 
-    if self.commandsQueued[return_index] then
-        print("Command", return_index, "error", errmsg)
-        self.commandsQueued[return_index] = nil
-    end
+    self.commandQueue:finishTask(return_index, nil, errmsg)
 end
 
 ---Process event typed CONNECT
@@ -303,7 +281,7 @@ function KosmoHost:processEventReceive(event)
             self.parent:handleRequest(received_request)
 
         else -- invalid token
-            local errorResponse = received_request:generateError(err)
+            local errorResponse = received_request:createError(err)
 
             self:command("send", peer, errorResponse:getPayload())
         end
@@ -320,19 +298,25 @@ end
 
 ---Dispatch command to the thread
 ---@param commandName HostCommandName Name of the command to be dispatched
----@param callback fun(self, ...)? Callback that catches the command result
+---@param callback AsyncCallback? Callback that catches the command result
 ---@param ... any Parameters passed to the host thread together with command
 ---@return HostCommandReturnIndex? dispatched Return id if command has been dispatched successfuly, nil if not (e.g. due to delay)
 ---@return string? error Possible error
 ---@protected
 function KosmoHost:dispatchCommand(commandName, callback, ...)
+    local task = {self = self, command = commandName, params = {...}}
+
     local command = self.commands[commandName]
 
     if not command then -- unknown command
-        return nil, Error.UNKNOWN_COMMAND:format(commandName)
+        local fail_callback = callback or self.receiveCommand
+        fail_callback(task, nil, Error.UNKNOWN_COMMAND:format(commandName))
+        return
     end
 
-    if command.delay > 0 then -- if command has delay defined
+    callback = callback or command.callback or self.receiveCommand
+
+    if command.delay > 0 then -- if command has delay
         if self.commandsDelay[commandName] then -- command is currently on cooldown
             return nil
         else -- no cooldown for the command
@@ -340,16 +324,11 @@ function KosmoHost:dispatchCommand(commandName, callback, ...)
         end
     end
 
-    local commandId = self.commandUnique
-    local args = {...}
+    local task_id = self.commandQueue:queueTask(task, callback)
 
-    self.commandsQueued[commandId] = {command = commandName, args = args, timeout = command.timeout or COMMAND_DEFAULT_TIMEOUT, callback = callback or command.callback}
+    self.commandChannel:push({commandName, task_id, task.params})
 
-    self.commandChannel:push({commandName, commandId, args})
-
-    self.commandUnique = self.commandUnique + 1
-
-    return commandId
+    return task_id
 end
 
 ---Issue a command to a host thread
@@ -371,6 +350,15 @@ end
 ---@public
 function KosmoHost:commandCallback(commandName, callback, ...)
     return self:dispatchCommand(commandName, callback, ...)
+end
+
+---@private
+function KosmoHost.receiveCommand(task, result, err)
+    if result then
+        return
+    end
+
+    print("Failed to execute command " .. tostring(task.command) .. " on host " .. tostring(task.self:getAddress()) .. ". Error: " .. (err or "command timeout"))
 end
 
 --#endregion Command dispatcher
@@ -498,16 +486,14 @@ end
 
 function thost.new()
     local obj = setmetatable({
-        unique = uniqueCounter,
         hostInfo = {
             connections = {},
             peerIndices = {}
         },
         servers = {},
 
-        commandUnique = 0,
-        commandsDelay = {},
-        commandsQueued = {}
+        commandQueue = async.new(COMMAND_DEFAULT_TIMEOUT),
+        commandsDelay = {}
     }, KosmoHost_meta)
 
     obj.commands = commands
