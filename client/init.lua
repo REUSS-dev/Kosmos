@@ -1,24 +1,26 @@
 ---@diagnostic disable: duplicate-set-field
 
----@type KosmoClient
-local client
-
 function love.load()
-    local gui = require("libs.stellargui").hook(true)
+    -- Modules
+    require("libs.stellargui").hook(true)
 
+    local scene = require("scripts.scene_master")
     local morda = require("classes.KosmoClient")
 
-    client = morda.new()
+    if KOSMO_DEBUG then
+        require("client.conf")
+    end
 
-    client:start()
-    client:setMainServerAddress("192.168.0.12:6789")
+    -- Client socket 
+    CLIENT = morda.new()
+
+    CLIENT:start()
+    CLIENT:setMainServerAddress(SERVER_ADDRESS)
+
+    -- transition
+    scene.load("startup")
 end
 
 function love.update(dt)
-    client:update(dt)
-end
-
-function love.draw()
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.print({"Client " .. (client:getClientAddress() or "") .. "\nServer status: ", client:getMainServerStatus() and {0, 1, 0, 1} or {1, 0, 0, 1}, client:getMainServerStatus() and "CONNECTED" or "DISCONNECTED. ATTEMPT RECONNECTING"})
+    CLIENT:update(dt)
 end
