@@ -1,5 +1,5 @@
--- button
-local button = {}
+-- loading
+local loading = {}
 
 local uiobj = require("classes.ObjectUI")
 
@@ -11,9 +11,9 @@ local utf = require("utf8")
 
 -- config
 
-button.name = "KosmosLoading"
-button.aliases = {}
-button.rules = {
+loading.name = "KosmosLoading"
+loading.aliases = {}
+loading.rules = {
     {"sizeRectangular", {0, 0, 50, 50}},
     {"position", {position = {"center", "center"}}},
 
@@ -26,6 +26,8 @@ button.rules = {
 -- consts
 
 local JUMPING_INTERVAL = 1
+
+local FIN_TIMER = 1
 
 -- vars
 
@@ -42,14 +44,16 @@ local JUMPING_INTERVAL = 1
 -- classes
 
 ---@class KosmosLoading : ObjectUI
----@field text string Button text
----@field font love.Font Button text font
+---@field text string loading text
+---@field font love.Font loading text font
 ---@field udt number
 ---@field r number
 ---@field symbols string[]
 ---@field symbolsCount integer
 ---@field symbolsRadianOffset radians[]
 ---@field previousJumping integer
+---@field finish boolean Finishing flag. Set to true to start finish sequence
+---@field finishTimer number Finishing animation timer
 local KosmosLoading = { }
 local KosmosLoading_meta = {__index = KosmosLoading}
 setmetatable(KosmosLoading, {__index = uiobj.class}) -- Set parenthesis
@@ -59,6 +63,48 @@ function KosmosLoading:paint()
     love.graphics.setFont(self.font)
 
     local jumping = math.floor(self.udt / JUMPING_INTERVAL) % self.symbolsCount + 1
+
+    -- FINISH DRAW
+    if self.finish then
+        if self.finishTimer == 0 then
+            return
+        end
+
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(self.particleSystem, 0, 0)
+
+        for i = 1, self.symbolsCount do
+            local letterRadian = self.symbolsRadianOffset[i] + self.udt
+            local rotation = letterRadian + math.pi / 2
+
+            local charWidth = self.font:getWidth(self.symbols[i]) / 2
+
+            love.graphics.setColor(0.8, 0.8, 0.5, 0.25 * self.finishTimer/FIN_TIMER)
+            if jumping ~= i then
+                love.graphics.print(self.symbols[i], self.r * math.cos(letterRadian) + charWidth * math.cos(rotation - math.pi), self.r * math.sin(letterRadian) + charWidth * math.sin(rotation - math.pi), rotation)
+                for x = -1, 1 do
+                    for y = -1, 1 do
+                        love.graphics.print(self.symbols[i], x + self.r * math.cos(letterRadian) + charWidth * math.cos(rotation - math.pi), y + self.r * math.sin(letterRadian) + charWidth * math.sin(rotation - math.pi), rotation)
+                    end
+                end
+            else
+                local jumpingProgress = ((JUMPING_INTERVAL * (math.floor(self.udt / JUMPING_INTERVAL) + 1) - self.udt)/JUMPING_INTERVAL - 1)^2
+
+                local radiusMultiplier = 1/3 + (1/2 - 1/3) * (math.abs((jumpingProgress - 0.5)) - 0.5)^2
+
+                local jumpingX = self.r * radiusMultiplier * math.cos(letterRadian + 2*math.pi*jumpingProgress - math.pi)
+                local jumpingY = self.r * radiusMultiplier * math.sin(letterRadian + 2*math.pi*jumpingProgress - math.pi)
+
+                for x = -1, 1 do
+                    for y = -1, 1 do
+                        love.graphics.print(self.symbols[i], x + (1 + radiusMultiplier)*self.r * math.cos(letterRadian) + charWidth * math.cos(rotation - math.pi) + jumpingX, y + (1 + radiusMultiplier)*self.r * math.sin(letterRadian) + charWidth * math.sin(rotation - math.pi) + jumpingY, rotation)
+                    end
+                end
+            end
+        end
+
+        return
+    end
 
     if jumping ~= self.previousJumping then
         self.previousJumping = jumping
@@ -107,9 +153,49 @@ function KosmosLoading:paint()
 end
 
 function KosmosLoading:tick(dt)
-    self.udt = self.udt + dt
+    if not self.finish then
+        self.udt = self.udt + dt
+    else
+        if self.finishTimer > 0 then
+            self.finishTimer = self.finishTimer - dt
+            if self.finishTimer < 0 then
+                self.finishTimer = 0
+            end
+        end
+    end
 
     self.particleSystem:update(dt)
+end
+
+function KosmosLoading:finishLoading()
+    self.finish = true
+    self.finishTimer = FIN_TIMER
+
+    local jumping = math.floor(self.udt / JUMPING_INTERVAL) % self.symbolsCount + 1
+
+    for i = 1, self.symbolsCount do
+        local letterRadian = self.symbolsRadianOffset[i] + self.udt
+        local rotation = letterRadian + math.pi / 2
+
+        local charWidth = self.font:getWidth(self.symbols[i]) / 2
+        local charHeight = self.font:getHeight() / 2
+        local charCenterX = charWidth / self.r
+        
+        if i == jumping then
+            local jumpingProgress = ((JUMPING_INTERVAL * (math.floor(self.udt / JUMPING_INTERVAL) + 1) - self.udt)/JUMPING_INTERVAL - 1)^2
+
+            local radiusMultiplier = 1/3 + (1/2 - 1/3) * (math.abs((jumpingProgress - 0.5)) - 0.5)^2
+
+            local jumpingX = self.r * radiusMultiplier * math.cos(letterRadian + 2*math.pi*jumpingProgress - math.pi)
+            local jumpingY = self.r * radiusMultiplier * math.sin(letterRadian + 2*math.pi*jumpingProgress - math.pi)
+
+            self.particleSystem:setPosition((1 + radiusMultiplier)*self.r * math.cos(letterRadian) + charWidth * math.cos(rotation - math.pi) + jumpingX, (1 + radiusMultiplier)*self.r * math.sin(letterRadian) + charWidth * math.sin(rotation - math.pi) + jumpingY, rotation)
+            self.particleSystem:emit(30)
+        else
+            self.particleSystem:setPosition((self.r - charHeight) * math.cos(letterRadian + charCenterX) + charWidth * math.cos(rotation - math.pi), (self.r - charHeight) * math.sin(letterRadian + charCenterX) + charWidth * math.sin(rotation - math.pi) + charHeight)
+            self.particleSystem:emit(30)
+        end
+    end
 end
 
 --#region private
@@ -135,7 +221,7 @@ function KosmosLoading:createParticleSystem()
     imagedata:mapPixel(function() return 1, 1, 1, 1 end)
     local particleImage = love.graphics.newImage(imagedata)
 
-    self.particleSystem = love.graphics.newParticleSystem(particleImage, 50)
+    self.particleSystem = love.graphics.newParticleSystem(particleImage, 900)
 
     self.particleSystem:setParticleLifetime(0.1, JUMPING_INTERVAL)
     self.particleSystem:setColors(1, 1, 0.5, 1, 1, 1, 1, 0)
@@ -145,9 +231,9 @@ end
 
 --#endregion
 
--- button fnc
+-- loading fnc
 
-function button.new(prototype)
+function loading.new(prototype)
     local obj = uiobj.new(prototype)
     ---@cast obj KosmosLoading
 
@@ -164,4 +250,4 @@ function button.new(prototype)
     return obj
 end
 
-return button
+return loading
