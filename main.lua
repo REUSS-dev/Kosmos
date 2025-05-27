@@ -46,6 +46,8 @@ function love.load()
             text = "Сервер",
             font = font,
             action = function ()
+                KOSMO_DEBUG = "server"
+
                 love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;server/?.lua;common/?/init.lua;server/?/init.lua")
                 lookfor_folder = "server"
                 require("server")
@@ -63,6 +65,8 @@ function love.load()
             text = "Клиент",
             font = font,
             action = function ()
+                KOSMO_DEBUG = "client"
+
                 love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;client/?.lua;common/?/init.lua;client/?/init.lua")
                 lookfor_folder = "client"
                 require("client")
