@@ -404,12 +404,14 @@ end
 function stellar.loadExternalObjects(path)
     local path = path or externalTypesDir
 
-    if not love.filesystem.exists(path) then
+    local path_info = love.filesystem.getInfo(path)
+
+    if not path_info then
         print(string.format("Failed loading object from %s. Path does not exist", path))
         return
     end
 
-    if love.filesystem.isFile(path) then
+    if path_info.type == "file" then
         local objectFileChunk = love.filesystem.load(path)
 
         if not objectFileChunk then
@@ -461,7 +463,7 @@ function stellar.hook(force)
     if hooked and not force then
         return stellar
     end
-
+    
     local love_update, love_draw, love_mousepressed, love_mousereleased, love_keypressed, love_keyreleased, love_textinput = love.update or nopFunc, love.draw or nopFunc, love.mousepressed or nopFunc, love.mousereleased or nopFunc, love.keypressed or nopFunc, love.keyreleased or nopFunc, love.textinput or nopFunc
 
     love.update = function(dt)

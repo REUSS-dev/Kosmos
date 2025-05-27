@@ -7,7 +7,7 @@ local palette = {}
 
 ---@alias ColorIndex number Number that colors inside the palette are indexed by. Agreement: 1 - main color, 2 - text color, 3 - additional color
 ---@alias ColorValue number<0,1> Amount of color in a channel. number<0, 1> for LOVE 11 and higher, number<0, 255> for LOVE 0.10 and lower.
----@alias ColorTable {[1]: ColorValue, [2]: ColorValue, [3]: ColorValue, [4]: ColorValue} Table, containing RGBA color.
+---@alias ColorTable {[1]: ColorValue, [2]: ColorValue, [3]: ColorValue, [4]: ColorValue, dark: ColorTable?, darker: ColorTable?, bright: ColorTable?, brighter: ColorTable?} Table, containing RGBA color.
 
 -- config
 
@@ -61,7 +61,9 @@ end
 
 -- fnc
 
-
+local function copyColorTable(color)
+    return {color[1], color[2], color[3], color[4]}
+end
 
 -- classes
 
@@ -94,10 +96,25 @@ function Palette:setColor(index_or_name, color)
     local index = (type(index_or_name) == "string") and colorNames[index_or_name] or index_or_name
 
     if color then
+        color = copyColorTable(color)
         setmetatable(color, colorModifier_meta)
     end
 
     self.container[index] = color
+end
+
+function Palette:setColorAlpha(index_or_name, new_alpha)
+    local index = (type(index_or_name) == "string") and colorNames[index_or_name] or index_or_name
+
+    self.container[index][4] = new_alpha
+
+    if self.container[index].dark then
+        self.container[index].dark[4] = new_alpha
+    end
+
+    if self.container[index].bright then
+        self.container[index].bright[4] = new_alpha
+    end
 end
 
 -- palette fnc

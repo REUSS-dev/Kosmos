@@ -98,7 +98,7 @@ function Button:keyPress(key)
 end
 
 ---Regenerate crucial data for button text printing
----@private
+---@package
 function Button:generateTextCache()
     self.textCache = {}
 
@@ -133,11 +133,9 @@ button.class = Button
 
 function button.new(prototype)
     local obj = uiobj.new(prototype)
-    ---@cast obj Button
 
-    setmetatable(obj, Button_meta)
+    setmetatable(obj, Button_meta) ---@cast obj Button
 
-    ---@diagnostic disable-next-line: invisible
     obj:generateTextCache()
 
     return obj
