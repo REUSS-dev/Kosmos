@@ -2,6 +2,7 @@
 local client = {}
 
 local socket = require("classes.KosmoSocket")
+local session = require("classes.KosmoSession")
 
 -- documentation
 
@@ -37,6 +38,7 @@ local CLIENT_API_NAME = "client"
 
 ---@class KosmoClient : KosmoSocket
 ---@field serverAddress string?
+---@field public session KosmoSession Session object to manipulate user data
 local KosmoClient = { }
 local KosmoClient_meta = { __index = KosmoClient }
 setmetatable(KosmoClient, { __index = socket.class })
@@ -69,6 +71,7 @@ function client.new(serverAddress)
     setmetatable(obj, KosmoClient_meta) ---@cast obj KosmoClient
 
     obj.serverAddress = serverAddress
+    obj.session = session.new()
 
     return obj
 end
