@@ -279,11 +279,15 @@ function KosmoHost:processEventReceive(event)
 
         if verified then -- valid token
             self.parent:handleRequest(received_request)
+            return
+        end
 
-        else -- invalid token
+        if err then -- error raised, must forward to original host
             local errorResponse = received_request:createError(err)
 
             self:command("send", peer, errorResponse:getPayload())
+        else
+            -- request discarded
         end
     else -- Non-kosmorequest
         self:onReceive(peer, data)

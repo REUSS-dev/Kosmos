@@ -23,7 +23,7 @@ function auth_api.server_hello(self, request)
 
     self:addMainServerToken(request)
 
-    self:response(request, { name = self:getName() }, "server_ack")
+    self:response(request, { name = self:getName() })
 end
 
 --#endregion

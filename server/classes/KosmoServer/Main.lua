@@ -29,6 +29,10 @@ local AUTH_SERVER_NAME = "auth"
 
 
 
+-- API responses
+
+
+
 -- fnc
 
 ---Redefined handler for server connect events in KosmoHost
@@ -43,10 +47,10 @@ local function host_connect_server(self, serverName, serverIndex)
 
     local server_hello_request = request.new("server_hello", { token = applied_server_token }, new_server_token:getToken(), 0):setPeer(serverIndex)
 
-    self.parent.connectedServers[server_hello_request:getUid()] = serverName -- Little memory leak
+    local request_uid = self.parent:request(server_hello_request, self.parent.server_ack)
 
+    self.parent.connectedServers[request_uid] = serverName -- Little memory leak
     self.parent.tokens:add(new_server_token)
-    self.parent:request(server_hello_request)
 end
 
 --- Redefined handler for server disconnect events in KosmoHost
@@ -63,6 +67,17 @@ end
 ---@field connectedServers table<string, string> Map of server names to client tokens (256 bit). Serves as table of connected and authenticated servers
 local KosmoServerMain = setmetatable({}, { __index = kosmoserver.class })
 local KosmoServerMain_meta = { __index = KosmoServerMain }
+
+--#region Server communication
+
+function KosmoServerMain:server_ack(_, response)
+    local server_name = self.connectedServers[response:getUid()]
+
+    self.connectedServers[server_name] = response:getToken()
+    self.connectedServers[response:getUid()] = nil
+end
+
+--#endregion
 
 function KosmoServerMain:addAuthServer(address, auth_server_token)
     self.serverTokens[AUTH_SERVER_NAME] = auth_server_token
