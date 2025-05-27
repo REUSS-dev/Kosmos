@@ -416,6 +416,13 @@ function KosmoHost:getServerStatus(name)
     return self.servers[name].peer and true or false
 end
 
+---Get info about a registered server
+---@param name string
+---@return HostServer
+function KosmoHost:getServer(name)
+    return self.servers[name]
+end
+
 ---Remove a server from the list of host's servers.
 ---@param name string
 function KosmoHost:removeServer(name)

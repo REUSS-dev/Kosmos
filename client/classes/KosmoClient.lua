@@ -1,7 +1,7 @@
 -- client
 local client = {}
 
-local host = require("classes.KosmoHost")
+local socket = require("classes.KosmoSocket")
 
 -- documentation
 
@@ -13,7 +13,9 @@ local host = require("classes.KosmoHost")
 
 -- consts
 
+local MAIN_SERVER_NAME = "main"
 
+local CLIENT_API_NAME = "client"
 
 -- host commands
 
@@ -29,68 +31,42 @@ local host = require("classes.KosmoHost")
 
 -- fnc
 
-local function onConnect(self)
-    self.parent.serverStatus = true
-end
 
-local function onDisconnect(self)
-    self.parent.serverStatus = false
-end
 
 -- classes
 
----@class KosmoClient
----@field hostObject KosmoHost
----@field started boolean
+---@class KosmoClient : KosmoSocket
 ---@field serverAddress string?
-local KosmoClient = {}
+local KosmoClient = { }
 local KosmoClient_meta = { __index = KosmoClient }
-
-function KosmoClient:start()
-    self.hostObject:start("*:*")
-
-    self.started = true
-
-    if self.serverAddress then
-        self.hostObject:addServer("main", self.serverAddress)
-    end
-end
-
-function KosmoClient:update(dt)
-    self.hostObject:update(dt)
-end
+setmetatable(KosmoClient, { __index = socket.class })
 
 function KosmoClient:getClientAddress()
     return self.hostObject.hostInfo.address
 end
 
-function KosmoClient:getServerStatus()
-    return self.hostObject:getServerStatus("main")
+function KosmoClient:getMainServerStatus()
+    return self.hostObject:getServerStatus(MAIN_SERVER_NAME)
 end
 
-function KosmoClient:setServerAddress(address)
+function KosmoClient:setMainServerAddress(address)
     if self.started then
-        if self.hostObject:getServerStatus("main") ~= nil then
-            self.hostObject:removeServer("main")
+        if self:getMainServerStatus() ~= nil then
+            self.hostObject:removeServer(MAIN_SERVER_NAME)
         end
 
         self.serverAddress = address
 
-        self.hostObject:addServer("main", address)
+        self.hostObject:addServer(MAIN_SERVER_NAME, address)
     end
 end
 
 -- client fnc
 
 function client.new(serverAddress)
-    local obj = setmetatable({}, KosmoClient_meta)
+    local obj = socket.new("*:*", KOSMO_DEBUG and ("client/api/" .. CLIENT_API_NAME) or ("api/" .. CLIENT_API_NAME), "client")
 
-    obj.started = false
-
-    obj.hostObject = host.new()
-    obj.hostObject.parent = obj
-    obj.hostObject.onConnect = onConnect
-    obj.hostObject.onDisconnect = onDisconnect
+    setmetatable(obj, KosmoClient_meta) ---@cast obj KosmoClient
 
     obj.serverAddress = serverAddress
 
