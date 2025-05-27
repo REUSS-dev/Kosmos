@@ -310,7 +310,7 @@ function KosmoHost:dispatchCommand(commandName, callback, ...)
 
     if not command then -- unknown command
         local fail_callback = callback or self.receiveCommand
-        fail_callback(task, nil, Error.UNKNOWN_COMMAND:format(commandName))
+        fail_callback(self, task, nil, Error.UNKNOWN_COMMAND:format(commandName))
         return
     end
 
@@ -353,12 +353,12 @@ function KosmoHost:commandCallback(commandName, callback, ...)
 end
 
 ---@private
-function KosmoHost.receiveCommand(task, result, err)
+function KosmoHost:receiveCommand(task, result, err)
     if result then
         return
     end
 
-    print("Failed to execute command " .. tostring(task.command) .. " on host " .. tostring(task.self:getAddress()) .. ". Error: " .. (err or "command timeout"))
+    print("Failed to execute command " .. tostring(task.command) .. " on host " .. tostring(self:getAddress()) .. ". Error: " .. (err or "command timeout"))
 end
 
 --#endregion Command dispatcher
@@ -492,10 +492,10 @@ function thost.new()
         },
         servers = {},
 
-        commandQueue = async.new(COMMAND_DEFAULT_TIMEOUT),
         commandsDelay = {}
     }, KosmoHost_meta)
 
+    obj.commandQueue = async.new(obj, COMMAND_DEFAULT_TIMEOUT)
     obj.commands = commands
 
     -- Initialize KosmoHost channels

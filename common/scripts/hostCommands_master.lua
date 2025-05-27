@@ -3,7 +3,7 @@ local commands
 commands = {
     getAddress = {
         delay = 10,
-        callback = function(task, address)
+        callback = function(self, task, address)
             task.self.hostInfo.address = address
         end
     },
@@ -21,9 +21,7 @@ commands = {
     },
     getRoundTripTime = {
         delay = 1,
-        callback = function (task, roundTripInfo)
-            local self = task.self
-            
+        callback = function (self, _, roundTripInfo)
             local peer, time = roundTripInfo[1], roundTripInfo[2]
             if type(peer) == "number" then
                 self.hostInfo.connections[peer][3] = time

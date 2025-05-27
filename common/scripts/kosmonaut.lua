@@ -47,6 +47,7 @@ end
 ---@field timeout number Timeout (in seconds) after which the task will be finished with failure and discarded
 ---@field sequenceCounter integer Current amount of back-to-back successful pops.
 ---@field maxSequence integer Maximum allowed amount of back-to-back successful pops.
+---@field parent table Parenting object that is set as first parameter of all tasks callback calls
 local AsyncAgent = {}
 local AsyncAgent_meta = { __index = AsyncAgent }
 
@@ -55,10 +56,10 @@ local AsyncAgent_meta = { __index = AsyncAgent }
 ---Queues provided task into processing
 ---@param task AsyncTask
 ---@param callback AsyncCallback
----@param nickname AsyncTaskIdentifier?
+---@param nickname AsyncNickname?
 ---@return AsyncTaskIdentifier
 function AsyncAgent:queueTask(task, callback, nickname)
-    local new_task_id = getNewTaskID() -- Advance new task id counter anyway, even if nickname provided
+    local new_task_id = getNewTaskID()
 
     self.tasks[new_task_id] = task
     self.callbacks[new_task_id] = callback
@@ -77,7 +78,7 @@ function AsyncAgent:popTask()
     local task_dispatched = self.queue[1]
 
     if not task_dispatched or self.sequenceCounter >= self.maxSequence then
-        self.sequenceCounter = 0
+        self:resetSubsequent()
         return nil
     end
 
@@ -88,6 +89,13 @@ function AsyncAgent:popTask()
     self.wait_time[task_dispatched] = 0
 
     return self.tasks[task_dispatched], task_dispatched
+end
+
+---Returns currently processed tasks with provided identifier (if such exists)
+---@param task_identifier AsyncTaskIdentifier
+---@return AsyncTask?
+function AsyncAgent:getTask(task_identifier)
+    return self.tasks[task_identifier]
 end
 
 ---Closes currently processed task with provided indetifier and result.
@@ -102,7 +110,7 @@ function AsyncAgent:finishTask(task_identifier, result, ...)
         return false
     end
 
-    self.callbacks[task_identifier](finished_task, result, ...)
+    self.callbacks[task_identifier](self.parent, finished_task, result, ...)
 
     self.tasks[task_identifier] = nil
     self.callbacks[task_identifier] = nil
@@ -112,7 +120,7 @@ function AsyncAgent:finishTask(task_identifier, result, ...)
 
     if self.extra_callbacks[task_identifier] then
         for _, extra_callback in ipairs(self.extra_callbacks[task_identifier]) do
-            extra_callback(finished_task, result, ...)
+            extra_callback(self.parent, finished_task, result, ...)
         end
 
         self.extra_callbacks[task_identifier] = nil
@@ -208,9 +216,35 @@ end
 
 --#endregion
 
+--#region Maximum subsequent tasks management
+
+---Get maximum amount of tasks that can be popped subsequently
+---@return integer max_subsequent
+---@public
+function AsyncAgent:getMaximumSubsequentPops()
+    return self.maxSequence
+end
+
+---Set maximum amount of tasks that can be popped subsequently
+---@param new_subsequent integer
+---@return AsyncAgent self
+---@public
+function AsyncAgent:setMaximumSubsequentPops(new_subsequent)
+    self.maxSequence = new_subsequent
+
+    return self
+end
+
+---Reset sequence counter of popped tasks
+function AsyncAgent:resetSubsequent()
+    self.sequenceCounter = 0
+end
+
+--#endregion
+
 -- kosmonaut fnc
 
-function kosmonaut.new(timeout, max_consequent_pops)
+function kosmonaut.new(parent, timeout, max_consequent_pops)
     local new_async = setmetatable({
         queue = {},
         tasks = {},
@@ -223,7 +257,9 @@ function kosmonaut.new(timeout, max_consequent_pops)
 
         timeout = timeout or DEFAULT_TIMEOUT,
         maxSequence = max_consequent_pops or DEFAULT_MAX_SEQUENCE,
-        sequenceCounter = 0
+        sequenceCounter = 0,
+
+        parent = parent
     }, AsyncAgent_meta)
 
     return new_async
