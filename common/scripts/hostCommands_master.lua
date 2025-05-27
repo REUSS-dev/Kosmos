@@ -24,10 +24,14 @@ commands = {
         callback = function (self, _, roundTripInfo)
             local peer, time = roundTripInfo[1], roundTripInfo[2]
             if type(peer) == "number" then
-                self.hostInfo.connections[peer][3] = time
+                if self.hostInfo.connections[peer] then
+                    self.hostInfo.connections[peer][3] = time
+                end
             else
                 for i, peerI in ipairs(peer) do
-                    self.hostInfo.connections[peerI][3] = time[i]
+                    if self.hostInfo.connections[peerI] then
+                        self.hostInfo.connections[peerI][3] = time[i]
+                    end
                 end
             end
         end
