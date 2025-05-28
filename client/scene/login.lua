@@ -9,7 +9,7 @@ local first_time = ...
 
 -- consts
 
-
+local AUTH_SERVER_GET_TASK_NICKNAME = "auth_connect"
 
 -- config
 
@@ -56,7 +56,7 @@ gui.register(stripe)
 -- Панель входа
 local panel = gui.Panel{
     color = {0.2, 0.2, 0.2, 1},
-    x = 150,
+    x = "center",
     y = 130,
     w = 400,
     h = 440,
@@ -95,7 +95,7 @@ gui.register(login_textfield_label)
 local login_textfield = gui.TextField{
     font = KOSMOFONT,
     color = {0.8, 0.8, 0.8, 1},
-    x = 180,
+    x = "center",
     y = login_textfield_label:getY() + 35,
     w = 340,
     h = 40,
@@ -120,11 +120,12 @@ gui.register(password_textfield_label)
 local password_textfield = gui.TextField{
     font = KOSMOFONT,
     color = {0.8, 0.8, 0.8, 1},
-    x = 180,
+    x = "center",
     y = password_textfield_label:getY() + 35,
     w = 340,
     h = 40,
-    r = 10
+    r = 10,
+    password = true
 }
 gui.register(password_textfield)
 
@@ -132,7 +133,7 @@ gui.register(password_textfield)
 local password_textfield = gui.KosmosButton{
     font = KOSMOFONT,
     color = KOSMOCOLOR_A,
-    x = 180,
+    x = "center",
     y = password_textfield:getY() + 60,
     w = 340,
     h = 50,
@@ -141,13 +142,47 @@ local password_textfield = gui.KosmosButton{
 gui.register(password_textfield)
 
 -- Кнопка Регистрация
-local password_textfield = gui.KosmosButton{
+local function hideLoad_callback_reg(client, _, result)
+    LOADING:finishLoading()
+
+    if not result then
+        return
+    end
+
+    if result:isError() then
+        return
+    end
+
+    scene.load("register")
+end
+
+local button_register = gui.KosmosButton{
     font = KOSMOFONT,
     color = ADDITIONALCOLOR_A,
-    x = 180,
+    x = "center",
     y = 490,
     w = 340,
     h = 50,
-    text = "Зарегистрироваться"
+    text = "Зарегистрироваться",
+    action = function()
+        if CLIENT:getAuthServerStatus() then
+            scene.load("register")
+        else
+            if not CLIENT.sentRequests:resolveNickname(AUTH_SERVER_GET_TASK_NICKNAME) then
+                local task_name, err = CLIENT:connectAuthServer()
+                if not task_name then
+                    NOTIF:error("Не удаётся подключиться к серверу аутентификации.\n" .. err)
+                    return
+                end
+
+                LOADING:show()
+                CLIENT.sentRequests:attachCallback(task_name, hideLoad_callback_reg)
+            end
+        end
+    end
 }
-gui.register(password_textfield)
+gui.register(button_register)
+
+-- Должен быть последним
+gui.register(LOADING)
+gui.register(NOTIF)

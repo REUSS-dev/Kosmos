@@ -54,9 +54,17 @@ local FIN_TIMER = 1
 ---@field previousJumping integer
 ---@field finish boolean Finishing flag. Set to true to start finish sequence
 ---@field finishTimer number Finishing animation timer
+---@field delayed_unreg boolean Flag. Set on object unregistration during finishing animation. If this flag is set, object must unregister itself after animation is finished
 local KosmosLoading = { }
 local KosmosLoading_meta = {__index = KosmosLoading}
 setmetatable(KosmosLoading, {__index = uiobj.class}) -- Set parenthesis
+
+function KosmosLoading:unregister()
+    if self.finish then
+        self.delayed_unreg = true
+        return true
+    end
+end
 
 function KosmosLoading:paint()
     love.graphics.translate(self.r, self.r)
@@ -160,6 +168,15 @@ function KosmosLoading:tick(dt)
             self.finishTimer = self.finishTimer - dt
             if self.finishTimer < 0 then
                 self.finishTimer = 0
+
+                self:hide()
+                self.finish = false
+                self.particleSystem:setPosition(0, 0)
+                self.udt = 0
+
+                if self.delayed_unreg then
+                    self.parent:unregisterMyself(self)
+                end
             end
         end
     end
@@ -196,6 +213,12 @@ function KosmosLoading:finishLoading()
             self.particleSystem:emit(30)
         end
     end
+end
+
+function KosmosLoading:show()
+    self.delayed_unreg = false
+
+    uiobj.class.show(self)
 end
 
 --#region private

@@ -25,7 +25,9 @@ local DB_TOKENS_FILENAME = "sauth_tokens"
 
 -- consts
 
+local PASSWORD_SALT_LENGTH = 16
 
+local ADMIN_EMAIL = "admin@admin.com"
 
 -- vars
 
@@ -38,7 +40,13 @@ local db_tokens_filepath = love.filesystem.getSaveDirectory() .. "/" .. DB_TOKEN
 
 -- fnc
 
+local function salt_password(password, salt)
+    salt = salt or tokengen.generate(PASSWORD_SALT_LENGTH)
 
+    password = love.data.hash("sha256", love.data.hash("sha256", password .. salt) .. salt)
+
+    return password, salt
+end
 
 -- classes
 
@@ -50,6 +58,19 @@ local db_tokens_filepath = love.filesystem.getSaveDirectory() .. "/" .. DB_TOKEN
 local KosmoServerAuth = setmetatable({}, { __index = kosmoserver.class })
 local KosmoServerAuth_meta = { __index = KosmoServerAuth }
 
+function KosmoServerAuth:start(...)
+    if not self.keys[db_accounts_filepath] then
+        error("Cannot start Authorization server without database keys!")
+    end
+
+    kosmoserver.class.start(self, ...)
+end
+
+function KosmoServerAuth:stop()
+    self.db_accounts:close()
+    self.db_tokens:close()
+end
+
 ---Adds main server token to its storage
 ---@param request KosmoRequest
 function KosmoServerAuth:addMainServerToken(request)
@@ -57,6 +78,8 @@ function KosmoServerAuth:addMainServerToken(request)
 
     self.tokens:add(token_object)
 end
+
+--#region auth server token management
 
 function KosmoServerAuth:loadToken()
     local token_filepath = AUTH_SERVER_TOKEN_PATH_PATTERN:format(self.name)
@@ -86,26 +109,28 @@ function KosmoServerAuth:generateServerToken()
     end
 end
 
-function KosmoServerAuth:start(...)
-    if not self.keys[db_accounts_filepath] then
-        error("Cannot start Authorization server without database keys!")
-    end
+--#endregion
 
-    kosmoserver.class.start(self, ...)
-end
-
-function KosmoServerAuth:stop()
-    self.db_accounts:close()
-    self.db_tokens:close()
-end
+--#region databases
 
 function KosmoServerAuth:setDatabaseKeys(accounts)
     self.keys[db_accounts_filepath] = accounts
 
     self.db_accounts:modifyField("email", "key_aes128", accounts)
-end
 
---#region databases
+    if self.db_accounts.count == 0 then
+        self.db_accounts:add{
+            "admin",
+            ADMIN_EMAIL,
+            "0",
+            "0"
+        }
+    end
+
+    if not self.db_accounts:getByKey("email", ADMIN_EMAIL) then
+        error("Incorrect key for accounts database!")
+    end
+end
 
 function KosmoServerAuth:initializeDatabases()
     self.keys = {}
@@ -122,7 +147,7 @@ function KosmoServerAuth:initializeDatabases_accounts()
             {name = "login", type = sdb.FieldType.STRING, size = 16, key = true},
             {name = "email", type = sdb.FieldType.AES_128, size = 254, key = true},
             {name = "password", type = sdb.FieldType.STRING, size = 32},
-            {name = "salt", type = sdb.FieldType.STRING, size = 16}
+            {name = "salt", type = sdb.FieldType.STRING, size = PASSWORD_SALT_LENGTH}
         }
 
         openned:open(db_accounts_filepath)
@@ -141,6 +166,35 @@ function KosmoServerAuth:initializeDatabases_tokens()
     end
 
     self.db_tokens = openned
+end
+
+--#endregion
+
+--#region auth server functions
+
+---Register user in a system
+---@param email string
+---@param login string
+---@param password string
+function KosmoServerAuth:registerUser(email, login, password)
+    local salted_password, salt = salt_password(password)
+
+    if self.db_accounts:getByKey("email", email) then
+        return nil, "User with this email is already registered"
+    end
+
+    if self.db_accounts:getByKey("login", login) then
+        return nil, "User with this login is already registered"
+    end
+
+    local db_success = self.db_accounts:add{
+        login,
+        email,
+        salted_password,
+        salt
+    }
+
+    return db_success
 end
 
 --#endregion

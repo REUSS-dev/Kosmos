@@ -1,3 +1,4 @@
 return {
-	server_hello = "guest"
+	server_hello = "guest",
+	register = "guest"
 }

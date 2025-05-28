@@ -350,6 +350,12 @@ function StateUI:setCursor(origin, type)
     end
 end
 
+---Volunteerly unregister origin object
+---@param origin ObjectUI
+function StateUI:unregisterMyself(origin)
+    stellar.unregister(origin)
+end
+
 -- stellar fnc
 
 ---Register the UI object descriptor in a system for update and draw

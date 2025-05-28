@@ -21,7 +21,7 @@ local TEXT_CONNECTION_SUCCESS = "Соединение с сервером уст
 
 -- config
 
-local MIN_LOAD_TIME = 3.5
+local MIN_LOAD_TIME = 0.5--3.5
 
 local FADEOUT_TIME = 1
 
@@ -42,14 +42,32 @@ if first_time then
     ADDITIONALCOLOR = {0.6, 0.6, 0.2, 1}
     ADDITIONALCOLOR_A = {0.6, 0.6, 0.2, 0.8}
 
+    ERRORCOLOR = {0.8, 0.3, 0.3, 1}
+    ERRORCOLOR_A = {0.8, 0.3, 0.3, 0.8}
+
     KOSMOFONT = love.graphics.newFont("resources/font.ttf", 22)
     KOSMOFONT_MEDIUM = love.graphics.newFont("resources/font.ttf", 50)
     KOSMOFONT_BIG = love.graphics.newFont("resources/font.ttf", 82)
     CELESTIALFONT = angelic.new("automata", 20):getFont()
+
+    -- общее гуи
+
+    -- оповещения
+    NOTIF = gui.KosmosNotification{
+        font = KOSMOFONT
+    }
+
+    -- Знак загрузки
+    LOADING = gui.KosmosLoading{
+        width = 100,
+        font = CELESTIALFONT,
+        pos = {-30, -125},
+        text = "Loadingload"
+    }
+    LOADING:hide()
 end
 
 -- init
-
 
 gui.unregisterAll()
 
@@ -87,7 +105,7 @@ connecting.totaldt = 0
 connecting.currentText = 0
 
 function connecting:tick(dt)
-    if not loading.finish then
+    if not loading.finish and loading.draw then
         local new_total = self.totaldt + dt
 
         if math.floor(self.totaldt) ~= math.floor(new_total) then
@@ -130,3 +148,6 @@ function connecting:tick(dt)
 end
 
 gui.register(connecting)
+
+-- Должен быть последним
+gui.register(NOTIF)

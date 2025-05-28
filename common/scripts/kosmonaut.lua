@@ -139,6 +139,7 @@ function AsyncAgent:attachCallback(nickname, newCallback)
     local resloved = self:resolveNickname(nickname)
 
     if not resloved then
+        newCallback(self.parent, nil, nil)
         return false
     end
 
@@ -181,7 +182,6 @@ end
 ---Try to resolve task nickname
 ---@param nickname AsyncNickname
 ---@return AsyncTaskIdentifier?
----@private
 function AsyncAgent:resolveNickname(nickname)
     return self.nickname[nickname]
 end
