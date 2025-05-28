@@ -31,6 +31,46 @@ end
 
 --#region guest access
 
+--#region login
+
+local failed_login_error = {
+    message = "Login credentials are invalid.",
+    code = 200,
+}
+
+local login_rejected_error = {
+    message = "Login failed due to unknown error.",
+    code = 200,
+}
+
+function auth_api:login(request)
+    local creds = request:getParams()
+
+    local login, password = creds.login, creds.password
+    local scope = creds.scope
+
+    if not scope or #scope == 0 then
+        self:responseError(request, login_rejected_error)
+        return
+    end
+
+    if type(login) ~= "string" or type(password) ~= "string" then
+        self:responseError(request, failed_login_error)
+        return
+    end
+
+    local success, err = self:loginUser(login, password, scope)
+
+    if not success then
+        self:responseError(request, {message = err --[[@as string]], code = 202})
+        return
+    end
+
+    self:response(request, {login = login, scope = scope, token = success})
+end
+
+--#endregion
+
 --#region register
 
 local email_validate = require("scripts.validemail")
@@ -73,6 +113,11 @@ function auth_api:register(request)
     local creds = request:getParams()
 
     local email, login, password = creds.email, creds.login, creds.password
+
+    if type(email) ~= "string" or type(login) ~= "string" or type(password) ~= "string" then
+        self:responseError(request, failed_register_error)
+        return
+    end
 
     if not validateRegisterInfo(email, login) then
         self:responseError(request, failed_register_error)

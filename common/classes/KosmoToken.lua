@@ -144,6 +144,16 @@ function token.new(tokenStr, scope, owner, clid)
     return new_token
 end
 
+function token.scopeArrayToMap(scope_array)
+    local map = {}
+
+    for _, value in ipairs(scope_array) do
+        map[value] = true
+    end
+
+    return map
+end
+
 ---Create new empty Token collection
 ---@return KosmoTokenCollection new_KosmoTokenCollection New KosmoTokenCollection object
 function token.newCollection()

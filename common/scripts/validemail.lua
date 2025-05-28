@@ -5,6 +5,11 @@ return function(str)
     return nil
   end
   local lastAt = str:find("[^%@]+$")
+
+  if not lastAt then
+    return nil, "No domain!"
+  end
+
   local localPart = str:sub(1, (lastAt - 2)) -- Returns the substring before '@' symbol
   local domainPart = str:sub(lastAt, #str) -- Returns the substring after '@' symbol
   -- we werent able to split the email properly

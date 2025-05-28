@@ -73,6 +73,24 @@ function AsyncAgent:queueTask(task, callback, nickname)
     return new_task_id
 end
 
+---Registers provided task and launches it immediately
+---@param task AsyncTask
+---@param callback AsyncCallback
+---@param nickname AsyncNickname?
+---@return AsyncTaskIdentifier
+function AsyncAgent:launchTask(task, callback, nickname)
+    local new_task_id = getNewTaskID()
+
+    self.tasks[new_task_id] = task
+    self.callbacks[new_task_id] = callback
+
+    self:addNickname(new_task_id, nickname)
+
+    self.wait_time[new_task_id] = 0
+
+    return new_task_id
+end
+
 ---Extract first task from the processing queue.
 ---@return AsyncTask? new_task New task extracted from queue, if queue is not empty; nil otherwise
 ---@return AsyncTaskIdentifier? new_task_id Task id used to finish this task, if queue is not empty; nil otherwise

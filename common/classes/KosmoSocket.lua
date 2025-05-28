@@ -70,6 +70,7 @@ end
 ---@field socketAddress HostAddress Address of a socket
 ---@field sentRequests AsyncAgent Async agent for sent requests and capturing responses
 ---@field queuedRequestsUpdateTimer number Timer accumulator of request send queue
+---@field events AsyncAgent Async agent for misc events
 local KosmoSocket = {}
 local KosmoSocket_meta = { __index = KosmoSocket }
 
@@ -88,6 +89,7 @@ end
 function KosmoSocket:update(dt)
     self.hostObject:update(dt)
     self.sentRequests:update(dt)
+    self.events:update(dt)
 
     self.queuedRequestsUpdateTimer = self.queuedRequestsUpdateTimer + dt
     if self.queuedRequestsUpdateTimer >= REQUEST_SEND_PERIOD then
@@ -262,6 +264,7 @@ function socket.new(serverAddress, api_name, name)
     obj.api = api.new(api_name)
 
     obj.sentRequests = async.new(obj, REQUEST_TIMEOUT, REQUEST_MAX_SUBSEQUENT)
+    obj.events = async.new(obj, REQUEST_TIMEOUT, REQUEST_MAX_SUBSEQUENT)
 
     obj.name = name or "KosmoSocket"
 

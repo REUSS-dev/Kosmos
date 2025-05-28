@@ -11,7 +11,11 @@ local socket = require("classes.KosmoSocket")
 
 -- config
 
-
+local OFFICIAL_CLIENT_SCOPE = {
+    "messages",
+    "contacts",
+    "profile"
+}
 
 -- consts
 
@@ -22,14 +26,24 @@ local CLIENT_API_NAME = "client"
 
 local GET_AUTH_SERVER_TASK_NAME = "auth_connect"
 local REGISTER_TASK_NAME = "register"
+local LOGIN_TASK_NAME = "login"
 
 -- host commands
 
-
+--- Redefined handler for server connect events in KosmoHost
+local function host_connect_server(self, serverName, serverIndex)
+    if serverName == AUTH_SERVER_NAME then
+        if self.parent.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME) then
+            self.parent.events:finishTask(self.parent.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME), true)
+        end
+    end
+end
 
 -- vars
 
 local api_version = API_VERSION
+
+local nop = function()end
 
 -- init
 
@@ -37,7 +51,33 @@ local api_version = API_VERSION
 
 -- fnc
 
+local function packPassword(password)
+    return love.data.hash("sha256", password)
+end
 
+local function checkError(response, err, message)
+    local msg
+
+    if not response then
+        msg = message:format(-1, tostring(err))
+    elseif response:isError() then
+        local data = response:getParams()
+
+        msg = message:format(tonumber(data.code) or -2, tostring(data.message))
+    end
+
+    if not msg then
+        return false
+    end
+
+    if NOTIF then
+        NOTIF:error(msg)
+    else
+        print(msg)
+    end
+
+    return true
+end
 
 -- classes
 
@@ -51,27 +91,15 @@ setmetatable(KosmoClient, { __index = socket.class })
 --#region api
 
 function KosmoClient:api_receiveAuthServer(_, response, err)
-    if not response then
-        -- client error during getting auth server address
-        print("client error during getting auth server address: ", err)
-
-        if NOTIF then
-            NOTIF:error("Ошибка при получении адреса сервера аутентификации.\n" .. "\"" .. tostring(err) .. "\"")
+    if checkError(response, err, "Ошибка при получении адреса сервера аутентификации, код %d.\n\"%s\"") then
+        if self.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME) then
+            print(123)
+            self.events:finishTask(self.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME) --[[@as AsyncTaskIdentifier]], nil, err)
         end
         return
     end
 
     local data = response:getParams()
-
-    if response:isError() then
-        -- server error during getting auth server address
-        print("server error during getting auth server address: ", data.code, data.message)
-
-        if NOTIF then
-            NOTIF:error("Ошибка при получении адреса сервера аутентификации, код " .. tostring(data.code) .. ".\n" .. "\"" .. tostring(data.message) .. "\"")
-        end
-        return
-    end
 
     local server_address = data.address
 
@@ -80,30 +108,33 @@ function KosmoClient:api_receiveAuthServer(_, response, err)
     print("Success obtaining auth server address")
 end
 
-function KosmoClient:api_receiveRegister(original, response, err)
-    if not response then
-        -- client error during getting auth server address
-        print("client error during register: ", err)
+function KosmoClient:api_receiveRegister(_, response, err)
+    if self.events:resolveNickname(REGISTER_TASK_NAME) then
+        self.events:finishTask(self.events:resolveNickname(REGISTER_TASK_NAME) --[[@as AsyncTaskIdentifier]], response, err)
+    end
 
-        if NOTIF then
-            NOTIF:error("Ошибка при регистрации.\n" .. "\"" .. tostring(err) .. "\"")
-        end
+    if checkError(response, err, "Ошибка при регистрации, код %d.\n\"%s\"") then
+        return
+    end
+
+    print("success registring")
+end
+
+function KosmoClient:api_receiveLogin(_, response, err)
+    if self.events:resolveNickname(LOGIN_TASK_NAME) then
+        self.events:finishTask(self.events:resolveNickname(LOGIN_TASK_NAME) --[[@as AsyncTaskIdentifier]], response, err)
+    end
+
+    if checkError(response, err, "Ошибка при входе, код %d.\n\"%s\"") then
         return
     end
 
     local data = response:getParams()
 
-    if response:isError() then
-        -- server error during getting auth server address
-        print("server error during getting auth server address: ", data.code, data.message)
+    self.session.addSession(data.login, data.token, data.scope)
+    self.session:setUser(data.login)
 
-        if NOTIF then
-            NOTIF:error("Ошибка при регистрации, код " .. tostring(data.code) .. ".\n" .. "\"" .. tostring(data.message) .. "\"")
-        end
-        return
-    end
-
-    print("success registring")
+    self:disconnectAuthServer()
 end
 
 --#endregion
@@ -169,13 +200,32 @@ function KosmoClient:connectAuthServer()
         return nil, "Auth server is already connected"
     end
 
-    if self.sentRequests:resolveNickname(GET_AUTH_SERVER_TASK_NAME) then
+    if self.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME) then
         return nil, "Still connecting to auth server..."
     end
 
-    self:requestMain("getAuthorizationServer", {}, self.api_receiveAuthServer, GET_AUTH_SERVER_TASK_NAME)
+    self:requestMain("getAuthorizationServer", {}, self.api_receiveAuthServer)
+    self.events:launchTask(GET_AUTH_SERVER_TASK_NAME, nop, GET_AUTH_SERVER_TASK_NAME)
 
     return GET_AUTH_SERVER_TASK_NAME
+end
+
+function KosmoClient:disconnectAuthServer()
+    self.hostObject:removeServer(AUTH_SERVER_NAME)
+end
+
+function KosmoClient:login(login, password)
+    if not self:getAuthServerStatus() then
+        self:connectAuthServer()
+        return nil, "No connection to auth server, try again later."
+    end
+
+    password = packPassword(password)
+
+    self:requestAuth("login", {login = login, password = password, scope = OFFICIAL_CLIENT_SCOPE}, self.api_receiveLogin)
+    self.events:launchTask(LOGIN_TASK_NAME, nop, LOGIN_TASK_NAME)
+
+    return LOGIN_TASK_NAME
 end
 
 function KosmoClient:register(email, login, password)
@@ -184,9 +234,16 @@ function KosmoClient:register(email, login, password)
         return nil, "No connection to auth server, try again later."
     end
 
-    self:requestAuth("register", {email = email, login = login, password = love.data.hash("sha256", password)}, self.api_receiveRegister, REGISTER_TASK_NAME)
+    password = packPassword(password)
+
+    self:requestAuth("register", {email = email, login = login, password = password}, self.api_receiveRegister)
+    self.events:launchTask(REGISTER_TASK_NAME, nop, REGISTER_TASK_NAME)
 
     return REGISTER_TASK_NAME
+end
+
+function KosmoClient:attachCallback(task_nickname, callback)
+    self.events:attachCallback(task_nickname, callback)
 end
 
 --#endregion
@@ -200,6 +257,8 @@ function client.new(serverAddress)
 
     obj.serverAddress = serverAddress
     obj.session = session.new()
+
+    obj.hostObject.onServerConnect = host_connect_server
 
     return obj
 end

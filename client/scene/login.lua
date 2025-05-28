@@ -130,19 +130,7 @@ local password_textfield = gui.TextField{
 gui.register(password_textfield)
 
 -- Кнопка Войти
-local password_textfield = gui.KosmosButton{
-    font = KOSMOFONT,
-    color = KOSMOCOLOR_A,
-    x = "center",
-    y = password_textfield:getY() + 60,
-    w = 340,
-    h = 50,
-    text = "Войти"
-}
-gui.register(password_textfield)
-
--- Кнопка Регистрация
-local function hideLoad_callback_reg(client, _, result)
+local function login_callback(_, _, result)
     LOADING:finishLoading()
 
     if not result then
@@ -150,6 +138,90 @@ local function hideLoad_callback_reg(client, _, result)
     end
 
     if result:isError() then
+        return
+    end
+
+    scene.load("main")
+    NOTIF:info("Вход успешен.\nДобро пожаловать, " .. tostring(result:getParams().login))
+end
+
+local function hideLoad_callback_log(_, _, result)
+    if not result then
+        LOADING:finishLoading()
+        return
+    end
+
+    if #login_textfield:getText() == 0 then
+        NOTIF:error("Введите логин.")
+        LOADING:finishLoading()
+        return
+    end
+
+    if #password_textfield:getText() == 0 then
+        NOTIF:error("Введите пароль.")
+        LOADING:finishLoading()
+        return
+    end
+
+    local task_name, err = CLIENT:login(login_textfield:getText(), password_textfield:getText())
+    if not task_name then
+        NOTIF:error("Не удаётся произвести вход в систему.\n" .. err)
+        LOADING:finishLoading()
+        return
+    end
+
+    CLIENT:attachCallback(task_name, login_callback)
+end
+
+local button_login = gui.KosmosButton{
+    font = KOSMOFONT,
+    color = KOSMOCOLOR_A,
+    x = "center",
+    y = password_textfield:getY() + 60,
+    w = 340,
+    h = 50,
+    text = "Войти",
+    action = function ()
+        if #login_textfield:getText() == 0 then
+            NOTIF:error("Введите логин.")
+            return
+        end
+
+        if #password_textfield:getText() == 0 then
+            NOTIF:error("Введите пароль.")
+            return
+        end
+
+        if CLIENT:getAuthServerStatus() then
+            local task_name, err = CLIENT:login(login_textfield:getText(), password_textfield:getText())
+            if not task_name then
+                NOTIF:error("Не удаётся произвести вход в систему.\n" .. err)
+                return
+            end
+
+            LOADING:show()
+            CLIENT:attachCallback(task_name, login_callback)
+        else
+            if not CLIENT.sentRequests:resolveNickname(AUTH_SERVER_GET_TASK_NICKNAME) then
+                local task_name, err = CLIENT:connectAuthServer()
+                if not task_name then
+                    NOTIF:error("Не удаётся подключиться к серверу аутентификации.\n" .. err)
+                    return
+                end
+
+                LOADING:show()
+                CLIENT:attachCallback(task_name, hideLoad_callback_log)
+            end
+        end
+    end
+}
+gui.register(button_login)
+
+-- Кнопка Регистрация
+local function hideLoad_callback_reg(client, _, result)
+    LOADING:finishLoading()
+
+    if not result then
         return
     end
 
@@ -176,7 +248,7 @@ local button_register = gui.KosmosButton{
                 end
 
                 LOADING:show()
-                CLIENT.sentRequests:attachCallback(task_name, hideLoad_callback_reg)
+                CLIENT:attachCallback(task_name, hideLoad_callback_reg)
             end
         end
     end

@@ -258,7 +258,7 @@ local button_register = gui.KosmosButton{
         end
 
         LOADING:show()
-        CLIENT.sentRequests:attachCallback(task_name, hideLoad_callback)
+        CLIENT:attachCallback(task_name, hideLoad_callback)
     end
 }
 gui.register(button_register)

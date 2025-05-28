@@ -4,6 +4,7 @@ local auth = {}
 local sdb = require("libs.stellardb.streladb")
 require("libs.stellardb.strela_aes128")
 local bdb = require("libs.stellardb.btreedb")
+local sbon = require("libs.stellardb.sbon")
 
 local kosmoserver = require("classes.KosmoServer")
 local token = require("classes.KosmoToken")
@@ -14,6 +15,8 @@ local tokengen = require("scripts.token_generator")
 
 ---@alias KosmoServerAuth_dbName string
 ---@alias KosmoServerAuth_dbKey string
+
+---@alias KosmoServerAuth_Account {[1]: string, [2]: string, [3]: string, [4]: string}
 
 -- config
 
@@ -171,6 +174,32 @@ end
 --#endregion
 
 --#region auth server functions
+
+---Log user into system
+---@param login string
+---@param password string
+---@return string? token
+---@return string? err
+function KosmoServerAuth:loginUser(login, password, scope)
+    local entry_id, entry = self.db_accounts:getByKey("login", login)
+
+    if not entry_id then
+        return nil, "Неверное имя пользователя или пароль!"--"Invalid login credentials!"
+    end
+    ---@cast entry KosmoServerAuth_Account
+
+    password = salt_password(password, entry[4])
+
+    if password ~= entry[3] then
+        return nil, "Неверное имя пользователя или пароль!"--"Invalid login credentials!"
+    end
+
+    local new_token = tokengen.generateClientToken()
+
+    self.db_tokens:set(new_token, sbon.encode({user = entry_id, scope = scope}))
+
+    return new_token
+end
 
 ---Register user in a system
 ---@param email string
