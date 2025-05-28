@@ -1,5 +1,6 @@
 SERVER_ADDRESS = "192.168.0.12:6789"
 API_VERSION = 1
+MIN_LOAD_TIME = 0.5
 
 function love.conf(t)
     t.identity = "Kosmos"               -- The name of the save directory (string)

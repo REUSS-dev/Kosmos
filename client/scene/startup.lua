@@ -21,8 +21,6 @@ local TEXT_CONNECTION_SUCCESS = "Соединение с сервером уст
 
 -- config
 
-local MIN_LOAD_TIME = 0.5--3.5
-
 local FADEOUT_TIME = 1
 
 -- vars
