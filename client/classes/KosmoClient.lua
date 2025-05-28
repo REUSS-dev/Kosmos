@@ -1,8 +1,9 @@
 -- client
 local client = {}
 
-local socket = require("classes.KosmoSocket")
+local krequest = require("classes.KosmoRequest")
 local session = require("classes.KosmoSession")
+local socket = require("classes.KosmoSocket")
 
 -- documentation
 
@@ -14,6 +15,7 @@ local session = require("classes.KosmoSession")
 
 -- consts
 
+local AUTH_SERVER_NAME = "auth"
 local MAIN_SERVER_NAME = "main"
 
 local CLIENT_API_NAME = "client"
@@ -24,7 +26,7 @@ local CLIENT_API_NAME = "client"
 
 -- vars
 
-
+local api_version = API_VERSION
 
 -- init
 
@@ -43,12 +45,54 @@ local KosmoClient = { }
 local KosmoClient_meta = { __index = KosmoClient }
 setmetatable(KosmoClient, { __index = socket.class })
 
+--#region
+
+function KosmoClient:api_receiveAuthServer(_, response, err)
+    if not response then
+        -- client error during getting auth server address
+        print("client error during getting auth server address: ", err)
+        return
+    end
+
+    local data = response:getParams()
+
+    if response:isError() then
+        -- server error during getting auth server address
+        print("server error during getting auth server address: ", data.code, data.message)
+        return
+    end
+
+    local server_address = data.address
+
+    self.hostObject:addServer(AUTH_SERVER_NAME, server_address)
+
+    print("Success obtaining auth server address")
+end
+
+--#endregion
+
 function KosmoClient:getClientAddress()
     return self.hostObject.hostInfo.address
 end
 
+function KosmoClient:getAuthServerStatus()
+    return self.hostObject:getServerStatus(AUTH_SERVER_NAME)
+end
+
 function KosmoClient:getMainServerStatus()
     return self.hostObject:getServerStatus(MAIN_SERVER_NAME)
+end
+
+function KosmoClient:connectAuthServer()
+    if not self:getMainServerStatus() then
+        return
+    end
+
+    if self:getAuthServerStatus() then
+        return
+    end
+
+    self:requestMain("getAuthorizationServer", {}, self.api_receiveAuthServer)
 end
 
 function KosmoClient:setMainServerAddress(address)
@@ -61,6 +105,19 @@ function KosmoClient:setMainServerAddress(address)
 
         self.hostObject:addServer(MAIN_SERVER_NAME, address)
     end
+end
+
+function KosmoClient:requestMain(method, params, callback, nickname)
+    if not self:getMainServerStatus() then
+        callback(self, nil, "Main server is unreachable")
+        return nil
+    end
+
+    local request = krequest.new(method, params, self.session:getTokenString(), api_version)
+
+    request:setPeer(self.hostObject:getServer(MAIN_SERVER_NAME).peer)
+
+    return self:request(request, callback, nickname)
 end
 
 -- client fnc

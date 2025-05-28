@@ -1,4 +1,5 @@
 return {
 	-- Client communication
-	introduceToken = "guest"
+	getAuthorizationServer = "guest",
+	introduceToken = "guest",
 }

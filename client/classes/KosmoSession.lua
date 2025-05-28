@@ -55,6 +55,8 @@ loadSessionsInfo()
 -- classes
 
 ---@class KosmoSession
+---@field user integer ID of a user of this session
+---@field sessionToken KosmoToken Token of a user of this session
 local KosmoSession = {}
 local KosmoSession_meta = { __index = KosmoSession }
 
@@ -62,10 +64,20 @@ function KosmoSession.getDefault()
     return sessions_info.default
 end
 
+function KosmoSession:getToken()
+    return self.sessionToken
+end
+
+function KosmoSession:getTokenString()
+    return not self.sessionToken and "" or self.sessionToken:getToken()
+end
+
 -- session fnc
 
-function session.new()
-    local obj = setmetatable({}, KosmoSession_meta)
+function session.new(user_id)
+    local obj = setmetatable({
+        user = user_id or sessions_info.default
+    }, KosmoSession_meta)
 
     return obj
 end

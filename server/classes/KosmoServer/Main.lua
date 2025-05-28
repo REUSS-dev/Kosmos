@@ -47,7 +47,7 @@ local function host_connect_server(self, serverName, serverIndex)
 
     local server_hello_request = request.new("server_hello", { token = applied_server_token }, new_server_token:getToken(), 0):setPeer(serverIndex)
 
-    local request_uid = self.parent:request(server_hello_request, self.parent.server_ack)
+    local request_uid = self.parent:request(server_hello_request, self.parent.api_serverAck)
 
     self.parent.connectedServers[request_uid] = serverName -- Little memory leak
     self.parent.tokens:add(new_server_token)
@@ -70,7 +70,7 @@ local KosmoServerMain_meta = { __index = KosmoServerMain }
 
 --#region Server communication
 
-function KosmoServerMain:server_ack(_, response)
+function KosmoServerMain:api_serverAck(_, response)
     local server_name = self.connectedServers[response:getUid()]
 
     self.connectedServers[server_name] = response:getToken()
@@ -87,6 +87,10 @@ end
 
 function KosmoServerMain:getAuthServerStatus()
     return self.connectedServers[AUTH_SERVER_NAME] and true or false
+end
+
+function KosmoServerMain:getAuthServerAddress()
+    return self.connectedServers[AUTH_SERVER_NAME] and self.hostObject:getServer(AUTH_SERVER_NAME).address or nil
 end
 
 -- mainserver fnc

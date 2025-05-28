@@ -19,6 +19,8 @@ local kosmonaut = {}
 local DEFAULT_TIMEOUT = 5
 local DEFAULT_MAX_SEQUENCE = 10
 
+local ERROR_TIMEOUT = "timeout"
+
 -- vars
 
 local task_id
@@ -209,7 +211,7 @@ function AsyncAgent:update(dt)
         self.wait_time[identifier] = self.wait_time[identifier] + dt
 
         if time_elapsed + dt > self.timeout then
-            self:finishTask(identifier, nil)
+            self:finishTask(identifier, nil, ERROR_TIMEOUT)
         end
     end
 end
