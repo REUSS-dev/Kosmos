@@ -48,7 +48,7 @@ function love.load()
             action = function ()
                 KOSMO_DEBUG = "server"
 
-                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;server/?.lua;common/?/init.lua;server/?/init.lua")
+                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;server/?.lua;common/?/init.lua;server/?/init.lua;libs/?/init.lua;libs/?.lua")
                 lookfor_folder = "server"
                 require("server")
                 gui:unregisterAll()
@@ -67,7 +67,7 @@ function love.load()
             action = function ()
                 KOSMO_DEBUG = "client"
 
-                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;client/?.lua;common/?/init.lua;client/?/init.lua")
+                love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;client/?.lua;common/?/init.lua;client/?/init.lua;libs/?/init.lua;libs/?.lua")
                 lookfor_folder = "client"
                 require("client")
                 gui:unregisterAll()

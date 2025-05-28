@@ -45,6 +45,10 @@ KosmoServer.getClientInfo = KosmoServer.getPeerInfo
 
 KosmoServer.pingClients = KosmoServer.pingPeers
 
+function KosmoServer:stop()
+    
+end
+
 -- server fnc
 
 function server.new(serverAddress, api_name, name)

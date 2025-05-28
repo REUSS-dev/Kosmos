@@ -6,15 +6,53 @@ local serverAuth, serverMain
 function love.load()
     local gui = require("libs.stellargui").hook(true)
 
+    --#region gui
+
+    local font = love.graphics.newFont("resources/font.ttf", 18)
+
+    local auth_key_textfield = gui.TextField{
+        x = -150,
+        y = 25,
+        w = 150,
+        h = 30,
+        font = font
+    }
+    gui.register(auth_key_textfield)
+
+    local main_server_start = gui.Button{
+        x = 200,
+        y = 25,
+        w = 80,
+        h = 30,
+        text = "Start",
+        font = font,
+        action = function ()
+            serverMain:start()
+        end
+    }
+    gui.register(main_server_start)
+
+    local auth_server_start = gui.Button{
+        x = -50,
+        y = 25,
+        w = 80,
+        h = 30,
+        text = "Start",
+        font = font,
+        action = function ()
+            serverAuth:setDatabaseKeys(auth_key_textfield:getText())
+            serverAuth:start()
+        end
+    }
+    gui.register(auth_server_start)
+
+    --#endregion
+
     local auth = require("classes.KosmoServer.Auth")
     local main = require("classes.KosmoServer.Main")
 
     serverAuth = auth.new("*:6788", "auth_central")
     serverMain = main.new("*:6789", "main")
-
-
-    serverAuth:start()
-    serverMain:start()
 
     serverMain:addAuthServer("192.168.0.12:6788", love.filesystem.read("server_auth_auth_central.tok"))
 end
@@ -28,6 +66,7 @@ function love.update(dt)
 end
 
 function love.draw()
+    love.graphics.setColor(1, 1, 1, 1)
     love.graphics.print("Server " .. (serverMain:getAddress() or "") .. " - " .. serverMain:getName() .. "\nAuth server status: " .. (serverMain:getAuthServerStatus() and "YES" or "NO"), 0, 0)
 
     love.graphics.print("Peers:", 0, 50)
@@ -38,9 +77,14 @@ function love.draw()
 
     love.graphics.print("Server " .. (serverAuth:getAddress() or "") .. " - " .. serverAuth:getName(), 400, 0)
 
-    love.graphics.print("Peers:", 400, 50)
+    love.graphics.print("Peers:", 400, 60)
     for i, peerI in ipairs(serverAuth:getClients()) do
         local info = serverAuth:getClientInfo(peerI)
-        love.graphics.print(i .. ". PID-" .. peerI .. " " .. info[1] .. " (Ping: " .. info[3] .. ")", 400, 50 + i * love.graphics.getFont():getHeight())
+        love.graphics.print(i .. ". PID-" .. peerI .. " " .. info[1] .. " (Ping: " .. info[3] .. ")", 400, 60 + i * love.graphics.getFont():getHeight())
     end
+end
+
+function love.quit()
+    serverAuth:stop()
+    serverMain:stop()
 end

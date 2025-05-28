@@ -1,6 +1,10 @@
 -- auth
 local auth = {}
 
+local sdb = require("libs.stellardb.streladb")
+require("libs.stellardb.strela_aes128")
+local bdb = require("libs.stellardb.btreedb")
+
 local kosmoserver = require("classes.KosmoServer")
 local token = require("classes.KosmoToken")
 
@@ -8,12 +12,16 @@ local tokengen = require("scripts.token_generator")
 
 -- documentation
 
-
+---@alias KosmoServerAuth_dbName string
+---@alias KosmoServerAuth_dbKey string
 
 -- config
 
 local AUTH_API_NAME = "KosmoAuth"
 local AUTH_SERVER_TOKEN_PATH_PATTERN = "server_auth_%s.tok"
+
+local DB_ACCOUNTS_FILENAME = "sauth_accounts"
+local DB_TOKENS_FILENAME = "sauth_tokens"
 
 -- consts
 
@@ -21,7 +29,8 @@ local AUTH_SERVER_TOKEN_PATH_PATTERN = "server_auth_%s.tok"
 
 -- vars
 
-
+local db_accounts_filepath = love.filesystem.getSaveDirectory() .. "/" .. DB_ACCOUNTS_FILENAME
+local db_tokens_filepath = love.filesystem.getSaveDirectory() .. "/" .. DB_TOKENS_FILENAME
 
 -- init
 
@@ -34,7 +43,10 @@ local AUTH_SERVER_TOKEN_PATH_PATTERN = "server_auth_%s.tok"
 -- classes
 
 ---@class KosmoServerAuth : KosmoServer
----@field token string Server token used by main server to authenticate with auth server 
+---@field token string Server token used by main server to authenticate with auth server
+---@field keys table<KosmoServerAuth_dbName, KosmoServerAuth_dbKey>
+---@field db_accounts StrelaDB Database of user accounts
+---@field db_tokens BTreeDB Database of client tokens
 local KosmoServerAuth = setmetatable({}, { __index = kosmoserver.class })
 local KosmoServerAuth_meta = { __index = KosmoServerAuth }
 
@@ -74,14 +86,74 @@ function KosmoServerAuth:generateServerToken()
     end
 end
 
+function KosmoServerAuth:start(...)
+    if not self.keys[db_accounts_filepath] then
+        error("Cannot start Authorization server without database keys!")
+    end
+
+    kosmoserver.class.start(self, ...)
+end
+
+function KosmoServerAuth:stop()
+    self.db_accounts:close()
+    self.db_tokens:close()
+end
+
+function KosmoServerAuth:setDatabaseKeys(accounts)
+    self.keys[db_accounts_filepath] = accounts
+
+    self.db_accounts:modifyField("email", "key_aes128", accounts)
+end
+
+--#region databases
+
+function KosmoServerAuth:initializeDatabases()
+    self.keys = {}
+
+    self:initializeDatabases_accounts()
+    self:initializeDatabases_tokens()
+end
+
+function KosmoServerAuth:initializeDatabases_accounts()
+    local openned = sdb.load(db_accounts_filepath)
+
+    if not openned then
+        openned = sdb.new{
+            {name = "login", type = sdb.FieldType.STRING, size = 16, key = true},
+            {name = "email", type = sdb.FieldType.AES_128, size = 254, key = true},
+            {name = "password", type = sdb.FieldType.STRING, size = 32},
+            {name = "salt", type = sdb.FieldType.STRING, size = 16}
+        }
+
+        openned:open(db_accounts_filepath)
+    end
+
+    self.db_accounts = openned
+end
+
+function KosmoServerAuth:initializeDatabases_tokens()
+    local openned = bdb.load(db_tokens_filepath)
+
+    if not openned then
+        openned = bdb.new(tokengen.getClientTokenLength())
+
+        openned:open(db_tokens_filepath)
+    end
+
+    self.db_tokens = openned
+end
+
+--#endregion
+
 -- auth fnc
 
 function auth.new(address, server_name)
     local new_server = kosmoserver.new(address, AUTH_API_NAME, server_name)
-
     setmetatable(new_server, KosmoServerAuth_meta) ---@cast new_server KosmoServerAuth
 
     new_server:loadToken()
+
+    new_server:initializeDatabases()
 
     return new_server
 end

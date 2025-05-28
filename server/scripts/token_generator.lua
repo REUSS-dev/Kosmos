@@ -22,7 +22,11 @@ function gen.generate(length)
 end
 
 function gen.generateClientToken()
-    return gen.generate(math.ceil(CLIENT_TOKEN_LENGTH / 8))
+    return gen.generate(gen.getClientTokenLength())
+end
+
+function gen.getClientTokenLength()
+    return math.ceil(CLIENT_TOKEN_LENGTH / 8)
 end
 
 function gen.generateServerToken()
