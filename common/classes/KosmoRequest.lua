@@ -241,7 +241,7 @@ end
 ---Returns whether this KosmoRequest is a response to another request.
 ---@return integer|false responseUid UID of request this response is meant for, if success; false otherwise
 function KosmoRequest:isResponse()
-    return self.method == RESPONSE_METHOD and self.uid
+    return (self.method == RESPONSE_METHOD or self.method == ERROR_METHOD) and self.uid
 end
 
 ---Returns whether this KosmoRequest is an error response to another request.
@@ -257,8 +257,8 @@ end
 ---Create new KosmoRequest object with its contents.
 ---@param method string Method new request will request access to.
 ---@param params KosmoRequestParams Map of parameters of new KosmoRequest.
----@param token string KosmoToken bytes.
----@param version integer API version new request asks for.
+---@param token string? KosmoToken bytes.
+---@param version integer? API version new request asks for.
 ---@param uid integer? Optional given unique identifier
 ---@return KosmoRequest new_KosmoRequest New KosmoRequest object
 function kosmorequest.new(method, params, token, version, uid)
