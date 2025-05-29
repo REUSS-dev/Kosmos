@@ -123,6 +123,7 @@ function KosmoServerAuth:setDatabaseKeys(accounts)
 
     if self.db_accounts.count == 0 then
         self.db_accounts:add{
+            "Admin",
             "admin",
             ADMIN_EMAIL,
             "0",
@@ -147,6 +148,7 @@ function KosmoServerAuth:initializeDatabases_accounts()
 
     if not openned then
         openned = sdb.new{
+            {name = "name", type = sdb.FieldType.STRING, size = 64},
             {name = "login", type = sdb.FieldType.STRING, size = 16, key = true},
             {name = "email", type = sdb.FieldType.AES_128, size = 254, key = true},
             {name = "password", type = sdb.FieldType.STRING, size = 32},
@@ -181,6 +183,8 @@ end
 ---@return string? token
 ---@return string? err
 function KosmoServerAuth:loginUser(login, password, scope)
+    login = string.lower(login)
+
     local entry_id, entry = self.db_accounts:getByKey("login", login)
 
     if not entry_id then
@@ -194,7 +198,10 @@ function KosmoServerAuth:loginUser(login, password, scope)
         return nil, "Неверное имя пользователя или пароль!"--"Invalid login credentials!"
     end
 
-    local new_token = tokengen.generateClientToken()
+    local new_token
+    repeat
+        new_token = tokengen.generateClientToken()
+    until not self.db_tokens:get(new_token)
 
     self.db_tokens:set(new_token, sbon.encode({user = entry_id, scope = scope}))
 
@@ -208,17 +215,22 @@ end
 function KosmoServerAuth:registerUser(email, login, password)
     local salted_password, salt = salt_password(password)
 
-    if self.db_accounts:getByKey("email", email) then
+    local email_lower = string.lower(email)
+
+    if self.db_accounts:getByKey("email", email_lower) then
         return nil, "User with this email is already registered"
     end
 
-    if self.db_accounts:getByKey("login", login) then
+    local login_lower = string.lower(login)
+
+    if self.db_accounts:getByKey("login", login_lower) then
         return nil, "User with this login is already registered"
     end
 
     local db_success = self.db_accounts:add{
         login,
-        email,
+        login_lower,
+        email_lower,
         salted_password,
         salt
     }
