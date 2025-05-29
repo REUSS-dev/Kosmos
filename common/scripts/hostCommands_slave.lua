@@ -47,7 +47,11 @@ commands = {
 
     disconnect = function (rid, args)
         local cid, data = args[1], args[2]
-        host:get_peer(cid):disconnect(data or 0)
+
+        local success, peer = pcall(host.get_peer, host, cid)
+        if success then
+            peer:disconnect(data or 0)
+        end
 
         event:push{HostEventType.RESPONSE, rid, true}
     end,
@@ -55,7 +59,11 @@ commands = {
     disconnectServer = function (rid, args)
         local address, cid = args[1], args[2]
         auto_reconnect[address] = false
-        host:get_peer(cid):disconnect()
+
+        local success, peer = pcall(host.get_peer, host, cid)
+        if success then
+            peer:disconnect(0)
+        end
 
         event:push{HostEventType.RESPONSE, rid, true}
     end,
@@ -66,10 +74,11 @@ commands = {
         local response
 
         if type(cid) == "number" then
-            local peer = host:get_peer(cid)
+            local success, peer = pcall(host.get_peer, host, cid)
 
-            if not peer then
+            if not success then
                 event:push{HostEventType.ERROR, rid, "No peer with such id: " .. cid}
+                return
             end
 
             response = peer:round_trip_time()
@@ -77,10 +86,11 @@ commands = {
             response = {}
 
             for i, peerI in ipairs(cid) do
-                local peer = host:get_peer(peerI)
+                local success, peer = pcall(host.get_peer, host, peerI)
 
-                if not peer then
+                if not success then
                     event:push{HostEventType.ERROR, rid, "No peer with such id: " .. cid}
+                    return
                 end
 
                 response[i] = peer:round_trip_time()
@@ -95,10 +105,11 @@ commands = {
     send = function (rid, args)
         local cid, data = args[1], args[2]
 
-        local peer = host:get_peer(cid)
+        local success, peer = pcall(host.get_peer, host, cid)
 
-        if not peer then
+        if not success then
             event:push{HostEventType.ERROR, rid, "No peer with such id: " .. cid}
+            return
         end
 
         peer:send(data)

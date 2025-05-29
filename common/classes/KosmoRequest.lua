@@ -156,7 +156,7 @@ end
 ---@param new_clid integer New client id value
 ---@return KosmoRequest self This KosmoRequest object
 function KosmoRequest:setClientID(new_clid)
-    self.peer = new_clid
+    self.clid = new_clid
 
     return self
 end
