@@ -192,9 +192,9 @@ function KosmoServerAuth:loginUser(login, password, scope)
     end
     ---@cast entry KosmoServerAuth_Account
 
-    password = salt_password(password, entry[4])
+    password = salt_password(password, entry[5])
 
-    if password ~= entry[3] then
+    if password ~= entry[4] then
         return nil, "Неверное имя пользователя или пароль!"--"Invalid login credentials!"
     end
 
@@ -205,7 +205,7 @@ function KosmoServerAuth:loginUser(login, password, scope)
 
     self.db_tokens:set(new_token, sbon.encode({user = entry_id, scope = scope}))
 
-    return new_token
+    return new_token, entry_id
 end
 
 ---Register user in a system
