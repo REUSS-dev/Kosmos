@@ -1,0 +1,362 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
+  <diagram name="Страница — 1" id="DM73zLs1T_ZY6GRiqnU_">
+    <mxGraphModel dx="3651" dy="1814" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-1" value="KosmoHost" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="304" y="70" width="220" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-2" value="- commandsQueue: AsyncAgent&lt;br&gt;- servers: table&amp;lt;string, HostServer&amp;gt;&lt;br&gt;- hostInfo: HostInfoTable&lt;br&gt;- thread: love.Thread&lt;br&gt;+ parent: KosmoSocket" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-1" vertex="1">
+          <mxGeometry y="26" width="220" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-3" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-1" vertex="1">
+          <mxGeometry y="100" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-4" value="- processEvents()&lt;br&gt;- command(commandName: string, ...)&lt;br&gt;+ start(bind_address: string)&lt;br&gt;+ update(dt: number)&lt;br&gt;+ getAddress(): string&lt;br&gt;+ getPeers: HostPeerIndex[]&lt;br&gt;+ getPeerInfo(peerIndex: HostPeerIndex): HostConnectionInfo&lt;br&gt;+ getRoundTrip(peerIndex: HostPeerIndex): integer&lt;br&gt;+ addServer(name: string, address: string)&lt;br&gt;+ getServerStatus(name: string): boolean?&lt;br&gt;+ getServer(name: string): HostServer&lt;br&gt;+ removeServer(name: string)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-1" vertex="1">
+          <mxGeometry y="108" width="220" height="242" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-5" value="KosmoSocket" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="304" y="520" width="220" height="470" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-6" value="- name: string&lt;br&gt;- hostObject: KosmoHost&lt;br&gt;- started: boolean&lt;br&gt;- tokens: KosmoTokenCollection&lt;br&gt;- api: KosmoApi&lt;br&gt;- socketAddress: string&lt;br&gt;- sentRequests: AsyncAgent&lt;br&gt;- events: AsyncAgent" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-5" vertex="1">
+          <mxGeometry y="26" width="220" height="124" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-7" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-5" vertex="1">
+          <mxGeometry y="150" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-8" value="+ start(bind_address: string)&lt;br&gt;+ update(dt: number)&lt;br&gt;+ getAddress(): string&lt;br&gt;+ setAddress(address: string)&lt;br&gt;+ getName(): string&lt;br&gt;+ setName(new_name: string)&lt;div&gt;+ getPeers: HostPeerIndex[]&lt;br&gt;+ getPeerInfo(peerIndex: HostPeerIndex): HostConnectionInfo&lt;br&gt;&lt;br&gt;+ request(request: KosmoRequest, callback: function, nickname: string)&lt;br&gt;+ response(request: KosmoRequest, params: table&amp;lt;string, any&amp;gt;)&lt;br&gt;+ responseError(request: KosmoRequest, error_header: ApiError)&lt;br&gt;+ validate(request: KosmoRequest): HostPeerIndex|KosmoRequest&lt;br&gt;+ handleRequest(received_request: KosmoRequest)&lt;br&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-5" vertex="1">
+          <mxGeometry y="158" width="220" height="312" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-10" value="" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-1" target="oNvfzoHGkvZbdWeEtISQ-5" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="390" y="460" as="sourcePoint" />
+            <mxPoint x="550" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-45" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-10" vertex="1" connectable="0">
+          <mxGeometry x="0.26" y="2" relative="1" as="geometry">
+            <mxPoint x="14" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-46" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-10" vertex="1" connectable="0">
+          <mxGeometry x="-0.72" y="-4" relative="1" as="geometry">
+            <mxPoint x="20" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-11" value="KosmoApi" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="740" y="483" width="220" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-12" value="- path: string&lt;br&gt;- defaultVersion: ApiVersion&lt;br&gt;- scope: table&amp;lt;ApiMethodName, ApiScopeGroup&amp;gt;&lt;br&gt;+ v: table&amp;lt;ApiVersion, table&amp;lt;ApiMethodName, function&amp;gt;&amp;gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-11" vertex="1">
+          <mxGeometry y="26" width="220" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-13" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-11" vertex="1">
+          <mxGeometry y="120" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-14" value="- readAPIs(folder: string)&lt;br&gt;- init()&lt;br&gt;+ getDefaultVersion(): ApiVersion&lt;br&gt;+ setDefaultVersion(new_default: ApiVersion)&lt;br&gt;+ cacheVersion(version: ApiVersion)&lt;br&gt;+ isMethodWithinScope(method: ApiMethodName, token: KosmoToken)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-11" vertex="1">
+          <mxGeometry y="128" width="220" height="122" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-15" value="" style="endArrow=diamondThin;endFill=0;endSize=24;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-11" target="oNvfzoHGkvZbdWeEtISQ-6" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="600" y="870" as="sourcePoint" />
+            <mxPoint x="760" y="870" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-41" value="*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-15" vertex="1" connectable="0">
+          <mxGeometry x="0.6481" y="-2" relative="1" as="geometry">
+            <mxPoint x="-7" y="-14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-42" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-15" vertex="1" connectable="0">
+          <mxGeometry x="-0.75" y="-1" relative="1" as="geometry">
+            <mxPoint x="15" y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-16" value="KosmoToken" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="1070" y="719" width="180" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-17" value="- token_bytes: string&lt;br&gt;- scope: table&amp;lt;ApiScopeGroup, boolean?&amp;gt;&lt;br&gt;- owner: HostPeerIndex&lt;br&gt;- clid: integer" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-16" vertex="1">
+          <mxGeometry y="26" width="180" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-18" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-16" vertex="1">
+          <mxGeometry y="110" width="180" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-19" value="+ getToken(): string&lt;br&gt;+ checkScope(group: ApiScopeGroup): boolean&lt;br&gt;+ checkOwner(peer_index: HostPeerIndex)&lt;br&gt;+ getOwner(): HostPeerIndex&lt;br&gt;+ getClientID(): integer" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-16" vertex="1">
+          <mxGeometry y="118" width="180" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-20" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-11" target="oNvfzoHGkvZbdWeEtISQ-16" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="590" y="810" as="sourcePoint" />
+            <mxPoint x="750" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-21" value="KosmoTokenCollection" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="760" y="744" width="180" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-22" value="- tokens&amp;lt;string, KosmoToken&amp;gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-21" vertex="1">
+          <mxGeometry y="26" width="180" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-23" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-21" vertex="1">
+          <mxGeometry y="50" width="180" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-24" value="+ add(new_token: KosmoToken)&lt;br&gt;+ find(token_string: string): KosmoToken?&lt;br&gt;+ delete(token_or_string: KosmoToken|string)&lt;br&gt;+ deletePeerTokens(peer: HostPeerIndex)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-21" vertex="1">
+          <mxGeometry y="58" width="180" height="122" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-25" value="" style="endArrow=diamondThin;endFill=0;endSize=24;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-16" target="oNvfzoHGkvZbdWeEtISQ-21" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="240" y="1100" as="sourcePoint" />
+            <mxPoint x="400" y="1100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-39" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-25" vertex="1" connectable="0">
+          <mxGeometry x="0.5679" y="-1" relative="1" as="geometry">
+            <mxPoint y="-14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-40" value="*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-25" vertex="1" connectable="0">
+          <mxGeometry x="-0.7385" relative="1" as="geometry">
+            <mxPoint y="-15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-26" value="" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-21" target="oNvfzoHGkvZbdWeEtISQ-8" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="490" y="1030" as="sourcePoint" />
+            <mxPoint x="650" y="1030" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-43" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-26" vertex="1" connectable="0">
+          <mxGeometry x="0.7627" y="-1" relative="1" as="geometry">
+            <mxPoint y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-44" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-26" vertex="1" connectable="0">
+          <mxGeometry x="-0.8305" y="-2" relative="1" as="geometry">
+            <mxPoint y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-27" value="AsyncAgent" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="-150" y="45" width="220" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-28" value="- tasks: table&amp;lt;AsyncTaskID, AsyncTask&amp;gt;&lt;br&gt;- callbacks: table&amp;lt;AsyncTaskID, function&amp;gt;&lt;br&gt;- extra_callbacks: table&amp;lt;AsyncTaskID, function[]&amp;gt;&lt;br&gt;- wait_time: table&amp;lt;AsyncTaskID, number&amp;gt;&lt;br&gt;- queue: AsyncTaskID[]&lt;br&gt;+ parent: table" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-27" vertex="1">
+          <mxGeometry y="26" width="220" height="154" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-29" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-27" vertex="1">
+          <mxGeometry y="180" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-30" value="+ queueTask(task: AsyncTask, callback: function, nickname: string?)&lt;br&gt;+ popTask(): AsyncTask?, AsyncTaskID?&lt;br&gt;+ getTask(task_identifier: AsyncTaskID): AsyncTask?&lt;br&gt;+ finishTask(task_identifier: AsyncTaskID, result: any, ...)&lt;br&gt;+ attachCallback(nickname: string, newCallback: function)&lt;br&gt;&lt;br&gt;+ getTimeout(): number&lt;br&gt;+ setTimeout(new_timeout: number)&lt;br&gt;+ update(dt: number)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-27" vertex="1">
+          <mxGeometry y="188" width="220" height="212" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-31" value="" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-27" target="oNvfzoHGkvZbdWeEtISQ-1" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="230" y="470" as="sourcePoint" />
+            <mxPoint x="230" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-37" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-31" vertex="1" connectable="0">
+          <mxGeometry x="0.8132" relative="1" as="geometry">
+            <mxPoint x="-12" y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-38" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-31" vertex="1" connectable="0">
+          <mxGeometry x="-0.8571" y="1" relative="1" as="geometry">
+            <mxPoint x="-7" y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-32" value="" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-27" target="oNvfzoHGkvZbdWeEtISQ-5" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="260" y="808" as="sourcePoint" />
+            <mxPoint x="544" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-35" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-32" vertex="1" connectable="0">
+          <mxGeometry x="0.7365" y="4" relative="1" as="geometry">
+            <mxPoint x="-2" y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-36" value="2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;" parent="oNvfzoHGkvZbdWeEtISQ-32" vertex="1" connectable="0">
+          <mxGeometry x="-0.8887" y="3" relative="1" as="geometry">
+            <mxPoint x="-2" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-47" value="KosmoRequest" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="-150" y="550" width="220" height="410" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-48" value="- method: string&lt;br&gt;- params: table&amp;lt;string, any&amp;gt;&lt;br&gt;- token: string&lt;br&gt;- version: integer&lt;br&gt;- uid: integer&lt;br&gt;- peer: HostPeerIndex?&lt;br&gt;- clid: integer?&lt;br&gt;- payload: string?" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-47" vertex="1">
+          <mxGeometry y="26" width="220" height="124" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-49" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-47" vertex="1">
+          <mxGeometry y="150" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-50" value="+ get/setMethod()&lt;br&gt;+ get/setParams()&lt;br&gt;+ get/setToken()&lt;br&gt;+ get/setVersion()&lt;br&gt;+ get/setUid()&lt;br&gt;+ get/setPeer()&lt;br&gt;+ get/setClientID()&lt;br&gt;&lt;br&gt;- generatePyaload()&lt;br&gt;+ getPayload(): string&lt;br&gt;&lt;br&gt;+ createResponse(params: table&amp;lt;string, any&amp;gt;): KosmoRequest&lt;br&gt;+ createError(error_header: ApiError): KosmoRequest&lt;br&gt;+ isResponse(): boolean&lt;br&gt;+ isError(): boolean" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-47" vertex="1">
+          <mxGeometry y="158" width="220" height="252" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-51" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-5" target="oNvfzoHGkvZbdWeEtISQ-47" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="460" y="1060" as="sourcePoint" />
+            <mxPoint x="620" y="1060" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-52" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-1" target="oNvfzoHGkvZbdWeEtISQ-47" edge="1">
+          <mxGeometry x="-0.134" y="-4" width="160" relative="1" as="geometry">
+            <mxPoint x="380" y="1150" as="sourcePoint" />
+            <mxPoint x="540" y="1150" as="targetPoint" />
+            <mxPoint y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-53" value="KosmoServer" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="43" y="1280" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-55" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" parent="oNvfzoHGkvZbdWeEtISQ-53" vertex="1">
+          <mxGeometry y="26" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-56" value="&lt;div&gt;+ getClients(): HostPeerIndex[]&lt;br&gt;+ getClientInfo(peerIndex: HostPeerIndex): HostConnectionInfo&lt;br&gt;+ pingClients()&lt;br&gt;+ stop()&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="oNvfzoHGkvZbdWeEtISQ-53" vertex="1">
+          <mxGeometry y="34" width="220" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-57" value="Extends" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;exitX=0.859;exitY=-0.02;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-53" target="oNvfzoHGkvZbdWeEtISQ-5" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="370" y="1070" as="sourcePoint" />
+            <mxPoint x="530" y="1070" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oNvfzoHGkvZbdWeEtISQ-58" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;exitX=1.001;exitY=0.823;exitDx=0;exitDy=0;exitPerimeter=0;entryX=-0.001;entryY=0.872;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="oNvfzoHGkvZbdWeEtISQ-8" target="oNvfzoHGkvZbdWeEtISQ-19" edge="1">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="990" y="720" as="sourcePoint" />
+            <mxPoint x="1100" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-1" value="KosmoServerAuth" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-117" y="1500" width="200" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-2" value="- token: string&lt;br&gt;- keys: table&amp;lt;KosmoServerAuth_dbName, KosmoServerAuth_dbKey&amp;gt;&lt;br&gt;- db_accounts: StrelaDB&lt;br&gt;- db_tokens: BTreeDB" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-1">
+          <mxGeometry y="26" width="200" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-3" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-1">
+          <mxGeometry y="120" width="200" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-4" value="+ start()&lt;br&gt;+ stop()&lt;br&gt;// region token management&lt;br&gt;+ loadToken()&lt;br&gt;+ generateServerToken()&lt;br&gt;// region database management&lt;br&gt;+ setDatabaseKeys(accounts: KosmoServerAuth_dbKey)&lt;br&gt;- initializeDatabases()&lt;br&gt;- initializeDatabases_accounts()&lt;br&gt;- initializeDatabases_tokens()&lt;br&gt;&lt;div&gt;// region api implementation&lt;br&gt;+ addMainServerToken(request: KosmoRequest)&lt;br&gt;+ loginUser(login: string, password: string, scope: ApiScopeGroup[])&lt;br&gt;+ registerUser(email: string, login: string, password: string)&lt;br&gt;&lt;br&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-1">
+          <mxGeometry y="128" width="200" height="272" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-5" value="Extends" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-1" target="oNvfzoHGkvZbdWeEtISQ-53">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="273" y="1550" as="sourcePoint" />
+            <mxPoint x="433" y="1550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-6" value="KosmoServerMain" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="213" y="1500" width="280" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-7" value="- serverTokens:&lt;br&gt;table&amp;lt;_ServerName, _ServerToken&amp;gt;&lt;br&gt;- connectedServers: table&amp;lt;_ServerName, _ClientToken&amp;gt;&lt;br&gt;- db_profiles: BTreeDB" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-6">
+          <mxGeometry y="26" width="280" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-8" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-6">
+          <mxGeometry y="110" width="280" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-9" value="+ stop()&lt;br&gt;+ addAuthServer(address: HostAddress, auth_server_token: _ServerToken)&lt;br&gt;+ getAuthServerStatus(): boolean&lt;br&gt;+ getAuthServerAddress(): string?&lt;br&gt;+ requestAuth(method: string, params: table, callback: function, nickname: string)&lt;br&gt;// region database management&lt;br&gt;- initializeDatabases()&lt;br&gt;- initializeDatabases_profile()&lt;br&gt;// region request response callbacks&lt;br&gt;+ api_serverAck(_, response: KosmoRequest)&lt;br&gt;+ api_receiveResolveToken(initital: KosmoRequest, response: KosmoRequest)&lt;br&gt;&lt;div&gt;+ api_introduce_talkback(original: KosmoRequest, auth_response: KosmoRequest)&lt;br&gt;+ api_receiveSearch(_, response: KosmoRequest)&lt;br&gt;+ api_search_talkback(original: KosmoRequest, search_response: KosmoRequest)&lt;br&gt;//region api implementation&lt;br&gt;+ resolveToken(request: KosmoRequest)&lt;br&gt;+ searchContact(request: KosmoRequest)&lt;br&gt;+ registerNewUser(user_id: integer, name: string, login: string)&lt;br&gt;+ getUserData(user_id: integer)&lt;br&gt;+ setUserData(user_id: integer, user_data: table)&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-6">
+          <mxGeometry y="118" width="280" height="382" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-10" value="Extends" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-6" target="oNvfzoHGkvZbdWeEtISQ-53">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="363" y="1400" as="sourcePoint" />
+            <mxPoint x="523" y="1400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-11" value="KosmoApiAuth" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-122" y="1980" width="210" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-12" value="Pseudo-class" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontStyle=3" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-11">
+          <mxGeometry y="26" width="210" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-13" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-11">
+          <mxGeometry y="50" width="210" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-14" value="&lt;div&gt;// guest access&lt;br&gt;+ server_hello(KosmoRequest)&lt;br&gt;+ login(KosmoRequest)&lt;br&gt;+ register(KosmoRequest)&lt;br&gt;// main server scope&lt;br&gt;- searchLoginEmail(KosmoRequest)&lt;br&gt;- resolveToken(KosmoRequest)&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-11">
+          <mxGeometry y="58" width="210" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-15" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-1" target="Eng92yGAa5eyeo1RCMdE-11">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="-477" y="1860" as="sourcePoint" />
+            <mxPoint x="-317" y="1860" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-16" value="KosmoApiMain" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="233" y="2080" width="240" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-17" value="Pseudo-class" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontStyle=3" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-16">
+          <mxGeometry y="26" width="240" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-18" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-16">
+          <mxGeometry y="50" width="240" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-19" value="&lt;div&gt;// service scope access&lt;br&gt;- registerNew(KosmoRequest)&lt;br&gt;// guest access&lt;br&gt;+ introduceToken(KosmoRequest)&lt;br&gt;+ getAuthorizationServer(KosmoRequest)&lt;br&gt;// user scope access&lt;br&gt;- searchContact(KosmoRequest)&lt;br&gt;- getUser(KosmoRequest)&lt;br&gt;- addFriend(KosmoRequest)&lt;br&gt;- sendMessage(KosmoRequest)&lt;br&gt;&lt;br&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-16">
+          <mxGeometry y="58" width="240" height="152" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-20" value="Use" style="endArrow=open;endSize=12;dashed=1;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-6" target="Eng92yGAa5eyeo1RCMdE-16">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="723" y="1850" as="sourcePoint" />
+            <mxPoint x="883" y="1850" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-21" value="KosmoClient" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="619" y="1060" width="320" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-22" value="- serverAddress: string?&lt;br&gt;+ session: KosmoSession&lt;br&gt;- cache: KosmoCache" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-21">
+          <mxGeometry y="26" width="320" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-23" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-21">
+          <mxGeometry y="80" width="320" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-24" value="+ update(dt: number)&lt;br&gt;+ getClientAddress(): string&lt;br&gt;+ getAuthServerStatus(): boolean&lt;br&gt;+ getMainServerStatus(): boolean&lt;br&gt;+ setMainServerAddress(address: string)&lt;br&gt;+ requestAuth(method: string, params: table, callback: function, nickname: string)&lt;br&gt;+ requestMain(method: string, params: table, callback: function, nickname: string)&lt;br&gt;+ changeUser(user: integer)&lt;br&gt;// region client functional set&lt;br&gt;+ connectAuthServer()&lt;br&gt;+ disconnectAuthServer()&lt;br&gt;+ login(login: string, password: string)&lt;br&gt;+ register(email: string, login: string, password: string)&lt;br&gt;+ introduceToken()&lt;br&gt;+ searchContact(email_or_login: string)&lt;br&gt;+ getUser(user_id: integer)&lt;br&gt;+ addFriend(user_id: integer)&lt;br&gt;+ sendMessage(user_id: integer, message: string)&lt;br&gt;// region request response callbacks&lt;br&gt;+ api_receiveAuthServer(_, response: KosmoRequest)&lt;br&gt;+ api_receiveRegister(_, response: KosmoRequest)&lt;br&gt;+ api_receiveLogin(_, response: KosmoRequest)&lt;br&gt;+ api_receiveIntroduce(_, response: KosmoRequest)&lt;br&gt;+ api_receiveSearch(_, response: KosmoRequest)&lt;br&gt;+ api_receiveUser(initial: KosmoRequest, response: KosmoRequest)&lt;br&gt;+ api_receiveFriend(initial: KosmoRequest, response: KosmoRequest)&lt;br&gt;+ api_receiveMessage(initial: KosmoRequest, response: KosmoRequest)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-21">
+          <mxGeometry y="88" width="320" height="472" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-25" value="Extends" style="endArrow=block;endSize=16;endFill=0;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-21" target="oNvfzoHGkvZbdWeEtISQ-53">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="570" y="1538" as="sourcePoint" />
+            <mxPoint x="670" y="1250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-26" value="KosmoSession" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1045" y="1038" width="190" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-27" value="- user: integer&lt;br&gt;- sessionToken: KosmoToken?" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-26">
+          <mxGeometry y="26" width="190" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-28" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-26">
+          <mxGeometry y="60" width="190" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-29" value="+ getToken(): KosmoToken?&lt;br&gt;+ getTokenString(): string&lt;br&gt;+ getUser(): integer&lt;br&gt;+ setUser(session_login: integer)&lt;br&gt;+ getSessionFolder(): string&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-26">
+          <mxGeometry y="68" width="190" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-30" value="" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-26" target="Eng92yGAa5eyeo1RCMdE-22">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="1119" y="1430" as="sourcePoint" />
+            <mxPoint x="1279" y="1430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-31" value="KosmoCache" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="1284" width="220" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-32" value="- session: KosmoSession&lt;br&gt;- cache_profiles_db: BTreeDB&lt;br&gt;- cache_profiles: table&amp;lt;integer, table&amp;gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-31">
+          <mxGeometry y="26" width="220" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-33" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-31">
+          <mxGeometry y="80" width="220" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-34" value="+ getProfile(profile_id: integer)&lt;br&gt;+ setProfile(profile_id: integer, profile_data: table)&lt;br&gt;&lt;br&gt;+ stop()&lt;br&gt;+ initializeCache()&lt;br&gt;+ initializeCache_profiles(path: string)&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="Eng92yGAa5eyeo1RCMdE-31">
+          <mxGeometry y="88" width="220" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-35" value="" style="endArrow=diamondThin;endFill=1;endSize=24;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-31" target="Eng92yGAa5eyeo1RCMdE-24">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="1125" y="1200" as="sourcePoint" />
+            <mxPoint x="1019" y="1200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Eng92yGAa5eyeo1RCMdE-36" value="" style="endArrow=diamondThin;endFill=0;endSize=24;html=1;rounded=0;" edge="1" parent="1" source="Eng92yGAa5eyeo1RCMdE-26" target="Eng92yGAa5eyeo1RCMdE-31">
+          <mxGeometry width="160" relative="1" as="geometry">
+            <mxPoint x="1139" y="1560" as="sourcePoint" />
+            <mxPoint x="1299" y="1560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
