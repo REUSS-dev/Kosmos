@@ -63,6 +63,10 @@ function main_api:getUser(request)
         self:responseError(request, {message = "No user with provided ID.", code = 200})
     end
 
+    if user_id ~= request:getClientID() then
+        user_data = {name = user_data.name, login = user_data.login}
+    end
+
     self:response(request, user_data)
 end
 
