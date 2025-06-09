@@ -1,9 +1,17 @@
 local main_api = {}
 local fallback
 
---#region Service communication - Authorization
+--#region Service communication
 
+---Register new user
+---@param request KosmoRequest
+function main_api:registerNew(request)
+    local params = request:getParams()
 
+    local user, name, login = params.user, params.name, params.login
+
+    self:registerNewUser(user, name, login)
+end
 
 --#endregion
 

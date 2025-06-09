@@ -8,6 +8,7 @@ local sbon = require("libs.stellardb.sbon")
 
 local kosmoserver = require("classes.KosmoServer")
 local token = require("classes.KosmoToken")
+local krequest = require("classes.KosmoRequest")
 
 local tokengen = require("scripts.token_generator")
 
@@ -51,6 +52,9 @@ local function salt_password(password, salt)
     return password, salt
 end
 
+local function nop()
+end
+
 -- classes
 
 ---@class KosmoServerAuth : KosmoServer
@@ -78,6 +82,9 @@ end
 ---@param request KosmoRequest
 function KosmoServerAuth:addMainServerToken(request)
     local token_object = token.new(request:getToken(), {main = true}, request:getPeer() --[[@as HostPeerIndex]], 0)
+
+    --temp
+    self.mainServerToken = token_object
 
     self.tokens:add(token_object)
 end
@@ -234,6 +241,12 @@ function KosmoServerAuth:registerUser(email, login, password)
         salted_password,
         salt
     }
+
+    --- notify main server
+    if db_success then
+        local request = krequest.new("registerNew", {user = db_success, login = login_lower, name = login}, self.mainServerToken:getToken(), 1, 1):setPeer(1)
+        self:request(request, nop, "bebra")
+    end
 
     return db_success
 end

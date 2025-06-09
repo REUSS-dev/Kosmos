@@ -230,15 +230,10 @@ function KosmoClient:login(login, password)
 end
 
 function KosmoClient:register(email, login, password)
-    if not self:getAuthServerStatus() then
-        self:connectAuthServer()
-        return nil, "No connection to auth server, try again later."
-    end
-
     password = packPassword(password)
 
-    self:requestAuth("register", {email = email, login = login, password = password}, self.api_receiveRegister)
     self.events:launchTask(REGISTER_TASK_NAME, nop, REGISTER_TASK_NAME)
+    self:requestAuth("register", {email = email, login = login, password = password}, self.api_receiveRegister)
 
     return REGISTER_TASK_NAME
 end
