@@ -13,7 +13,7 @@ local async = require("scripts.kosmonaut")
 
 -- config
 
-local REQUEST_TIMEOUT = 10
+local REQUEST_TIMEOUT = KOSMO_DEBUG and 5 or 30
 local REQUEST_MAX_SUBSEQUENT = 3
 local REQUEST_SEND_PERIOD = 1.1
 
@@ -155,6 +155,8 @@ function KosmoSocket:request(request, callback, nickname)
     local async_id = self.sentRequests:queueTask(request, callback, nickname)
     request:setUid(async_id) -- Override default request UID to match AsyncTaskIdentifier to identify response
 
+    print("Sent request ", request:getMethod())
+
     return async_id
 end
 
@@ -244,6 +246,25 @@ end
 function KosmoSocket:handleRequest(received_request)
     self.api.v[received_request:getVersion()][received_request:getMethod()](self, received_request)
 end
+
+--#region events
+
+function KosmoSocket:attachCallback(task_nickname, callback)
+    self.events:attachCallback(task_nickname, callback)
+end
+
+---Finishes event with given name if such is running
+---@param task_nickname AsyncNickname
+---@param ... any
+function KosmoSocket:finishIfRunning(task_nickname, ...)
+    local resolved_task = self.events:resolveNickname(task_nickname)
+
+    if resolved_task then
+        self.events:finishTask(resolved_task, ...)
+    end
+end
+
+--#endregion
 
 -- socket fnc
 

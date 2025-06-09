@@ -93,10 +93,7 @@ setmetatable(KosmoClient, { __index = socket.class })
 
 function KosmoClient:api_receiveAuthServer(_, response, err)
     if checkError(response, err, "Ошибка при получении адреса сервера аутентификации, код %d.\n\"%s\"") then
-        if self.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME) then
-            print(123)
-            self.events:finishTask(self.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME) --[[@as AsyncTaskIdentifier]], nil, err)
-        end
+        self:finishIfRunning(GET_AUTH_SERVER_TASK_NAME, nil, err) -- здесь завершается только при ошибке, потому что успехом завершится только после подключения
         return
     end
 
@@ -110,9 +107,7 @@ function KosmoClient:api_receiveAuthServer(_, response, err)
 end
 
 function KosmoClient:api_receiveRegister(_, response, err)
-    if self.events:resolveNickname(REGISTER_TASK_NAME) then
-        self.events:finishTask(self.events:resolveNickname(REGISTER_TASK_NAME) --[[@as AsyncTaskIdentifier]], response, err)
-    end
+    self:finishIfRunning(REGISTER_TASK_NAME, response, err)
 
     if checkError(response, err, "Ошибка при регистрации, код %d.\n\"%s\"") then
         return
@@ -122,11 +117,8 @@ function KosmoClient:api_receiveRegister(_, response, err)
 end
 
 function KosmoClient:api_receiveLogin(_, response, err)
-    if self.events:resolveNickname(LOGIN_TASK_NAME) then
-        self.events:finishTask(self.events:resolveNickname(LOGIN_TASK_NAME) --[[@as AsyncTaskIdentifier]], response, err)
-    end
-
     if checkError(response, err, "Ошибка при входе, код %d.\n\"%s\"") then
+        self:finishIfRunning(LOGIN_TASK_NAME, response, err)
         return
     end
 
