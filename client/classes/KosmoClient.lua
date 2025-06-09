@@ -128,6 +128,8 @@ function KosmoClient:api_receiveLogin(_, response, err)
     self:changeUser(data.login)
 
     self:disconnectAuthServer()
+
+    self:finishIfRunning(LOGIN_TASK_NAME, response, err)
 end
 
 --#endregion
@@ -158,7 +160,8 @@ end
 
 function KosmoClient:requestAuth(method, params, callback, nickname)
     if not self:getAuthServerStatus() then
-        callback(self, nil, "Main server is unreachable")
+        self:connectAuthServer()
+        callback(self, nil, "Auth server is unreachable")
         return nil
     end
 
@@ -216,15 +219,18 @@ function KosmoClient:disconnectAuthServer()
 end
 
 function KosmoClient:login(login, password)
-    if not self:getAuthServerStatus() then
-        self:connectAuthServer()
-        return nil, "No connection to auth server, try again later."
+    if not login or not password then
+        return nil, "Введите логин и пароль"
+    end
+
+    if #login == 0 or #password == 0 then
+        return nil, "Введите логин и пароль"
     end
 
     password = packPassword(password)
 
-    self:requestAuth("login", {login = login, password = password, scope = OFFICIAL_CLIENT_SCOPE}, self.api_receiveLogin)
     self.events:launchTask(LOGIN_TASK_NAME, nop, LOGIN_TASK_NAME)
+    self:requestAuth("login", {login = login, password = password, scope = OFFICIAL_CLIENT_SCOPE}, self.api_receiveLogin)
 
     return LOGIN_TASK_NAME
 end
