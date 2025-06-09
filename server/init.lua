@@ -55,10 +55,10 @@ function love.load()
     local auth = require("classes.KosmoServer.Auth")
     local main = require("classes.KosmoServer.Main")
 
-    serverAuth = auth.new("*:6788", "auth_central")
-    serverMain = main.new("*:6789", "main")
+    serverAuth = auth.new(AUTH_ADDRESS, "auth_central")
+    serverMain = main.new(MAIN_ADDRESS, "main")
 
-    serverMain:addAuthServer("192.168.0.12:6788", love.filesystem.read("server_auth_auth_central.tok"))
+    serverMain:addAuthServer(AUTH_ADDRESS, love.filesystem.read("server_auth_auth_central.tok"))
 end
 
 function love.update(dt)
