@@ -9,5 +9,6 @@ return {
 	-- Client communication
 	searchContact = "contacts",
 	getUser = "contacts",
-	addFriend = "contacts"
+	addFriend = "contacts",
+	sendMessage = "contacts"
 }

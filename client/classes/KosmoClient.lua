@@ -34,6 +34,7 @@ local INTRODUCE_TASK_NAME = "introduce"
 local SEARCH_CONTACT_TASK_NAME = "search contact"
 local GET_USER_TASK_NAME = "get user"
 local ADD_FRIEND_TASK_NAME = "add friend"
+local SEND_MESSAGE_TASK_NAME = "send message"
 
 -- host commands
 
@@ -84,7 +85,7 @@ local function checkError(response, err, message)
     end
 
     if NOTIF then
-        NOTIF:error(msg)
+        --NOTIF:error(msg)
     else
         print(msg)
     end
@@ -191,6 +192,17 @@ function KosmoClient:api_receiveFriend(initial, response, err)
     self.cache:setProfile(self.session:getUser(), response:getParams())
 
     self:finishIfRunning(ADD_FRIEND_TASK_NAME, response, err)
+end
+
+function KosmoClient:api_receiveMessage(initial, response, err)
+    if checkError(response, err, "Ошибка при отправке сообщения, код %d.\n\"%s\"") then
+        self:finishIfRunning(SEND_MESSAGE_TASK_NAME, response, err)
+        return
+    end
+
+    self.cache:setProfile(self.session:getUser(), response:getParams())
+
+    self:finishIfRunning(SEND_MESSAGE_TASK_NAME, response, err)
 end
 
 --#endregion
@@ -366,6 +378,16 @@ function KosmoClient:addFriend(user_id)
     self.events:launchTask(ADD_FRIEND_TASK_NAME, nop, ADD_FRIEND_TASK_NAME)
     self:requestMain("addFriend", {user = user_id}, self.api_receiveFriend)
     return ADD_FRIEND_TASK_NAME
+end
+
+function KosmoClient:sendMessage(user_id, message)
+    if not user_id then
+        return nil, "no user id"
+    end
+
+    self.events:launchTask(SEND_MESSAGE_TASK_NAME, nop, SEND_MESSAGE_TASK_NAME)
+    self:requestMain("sendMessage", {friend = user_id, message = message}, self.api_receiveMessage)
+    return SEND_MESSAGE_TASK_NAME
 end
 
 --#endregion

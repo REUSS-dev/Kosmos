@@ -73,6 +73,18 @@ local friends = gui.KosmosFriends{
 }
 gui.register(friends)
 
+CONVERSATION = gui.KosmosConversation{
+    x = 10,
+    y = 10,
+    w = love.graphics.getWidth() - profile:getWidth() - 10 - 10 - 10,
+    h = 540,
+    r = 10,
+    font = KOSMOFONT_SMALL_PLUS,
+    font_small = KOSMOFONT_SMALL,
+    client = CLIENT
+}
+gui.register(CONVERSATION)
+
 -- Должен быть последним
 gui.register(LOADING)
 gui.register(NOTIF)

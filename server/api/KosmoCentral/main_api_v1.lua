@@ -83,6 +83,31 @@ function main_api:addFriend(request)
     self:response(request, user_data)
 end
 
+---@param request KosmoRequest
+function main_api:sendMessage(request)
+    local params = request:getParams()
+
+    local friend_id, message = params.friend, params.message
+    local user_id = request:getClientID()
+
+    local user_data = self:getUserData(user_id)
+    local friend_data = self:getUserData(friend_id)
+
+    local time = os.date("%H:%M", os.time())
+    local message_fin = user_data.name .. " (" .. time .. ") : " .. message .. "\n"
+
+    user_data.chats[tostring(friend_id)] = user_data.chats[tostring(friend_id)] or ""
+    user_data.chats[tostring(friend_id)] = user_data.chats[tostring(friend_id)] .. message_fin
+
+    friend_data.chats[tostring(user_id)] = friend_data.chats[tostring(user_id)] or ""
+    friend_data.chats[tostring(user_id)] = friend_data.chats[tostring(user_id)] .. message_fin
+
+    self:setUserData(user_id, user_data)
+    self:setUserData(friend_id, friend_data)
+
+    self:response(request, user_data)
+end
+
 --#endregion
 
 return main_api, fallback
