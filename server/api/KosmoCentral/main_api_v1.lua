@@ -36,8 +36,25 @@ function main_api:getAuthorizationServer(request)
     if auth_server then
         self:response(request, {address = auth_server})
     else
-        self:responseError(request, {message = "Authorization server is currently down or unreachable.", code = 200})
+        self:responseError(request, {message = "Authorization server is currently down or unreachable.", code = 503})
     end
+end
+
+--#endregion
+
+--#region contacts
+
+---@param request KosmoRequest
+function main_api:getUser(request)
+    local user_id = request:getParams().user
+
+    local user_data = self:getUserData(user_id)
+
+    if not user_data then
+        self:responseError(request, {message = "No user with provided ID.", code = 200})
+    end
+
+    self:response(request, user_data)
 end
 
 --#endregion

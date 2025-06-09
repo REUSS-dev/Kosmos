@@ -18,6 +18,8 @@ local OFFICIAL_CLIENT_SCOPE = {
     "profile"
 }
 
+local UPDATE_PERIOD = 5
+
 -- consts
 
 local AUTH_SERVER_NAME = "auth"
@@ -29,6 +31,7 @@ local GET_AUTH_SERVER_TASK_NAME = "auth_connect"
 local REGISTER_TASK_NAME = "register"
 local LOGIN_TASK_NAME = "login"
 local INTRODUCE_TASK_NAME = "introduce"
+local GET_USER_TASK_NAME = "get user"
 
 -- host commands
 
@@ -150,7 +153,31 @@ function KosmoClient:api_receiveIntroduce(_, response, err)
     self:getUser(response:getParams().clid)
 end
 
+function KosmoClient:api_receiveUser(initial, response, err)
+    if checkError(response, err, "Ошибка при получении информации о пользователе, код %d.\n\"%s\"") then
+        self:finishIfRunning(GET_USER_TASK_NAME, response, err)
+        return
+    end
+
+    self.cache:setProfile(initial:getParams().user, response:getParams())
+
+    self:finishIfRunning(GET_USER_TASK_NAME, response, err)
+end
+
 --#endregion
+
+function KosmoClient:update(dt)
+    socket.class.update(self, dt)
+
+    self.updateTimer = self.updateTimer + dt
+    if self.updateTimer >= UPDATE_PERIOD then
+        if self.session:getUser() then
+            self:getUser(self.session:getUser())
+        end
+
+        self.updateTimer = self.updateTimer - UPDATE_PERIOD
+    end
+end
 
 function KosmoClient:getClientAddress()
     return self.hostObject.hostInfo.address
@@ -278,6 +305,17 @@ function KosmoClient:introduceToken()
     self:requestMain("introduceToken", {token = token}, self.api_receiveIntroduce)
 
     return INTRODUCE_TASK_NAME
+end
+
+function KosmoClient:getUser(user_id)
+    if not user_id then
+        return nil, "no user id"
+    end
+
+    self.events:launchTask(GET_USER_TASK_NAME, nop, GET_USER_TASK_NAME)
+    self:requestMain("getUser", {user = user_id}, self.api_receiveUser)
+
+    return GET_USER_TASK_NAME
 end
 
 --#endregion

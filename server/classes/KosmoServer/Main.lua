@@ -210,6 +210,24 @@ function KosmoServerMain:registerNewUser(user_id, name, login)
     return user_data
 end
 
+---Get user data from database if such user exists
+---@param user_id integer
+---@return table?
+function KosmoServerMain:getUserData(user_id)
+
+    local key = sbon.encodeUnsignedInteger(user_id)
+
+    local user_data = self.db_profiles:get(key)
+
+    if not user_data then
+        return nil
+    end
+
+    local user_info = sbon.decode(user_data)
+
+    return user_info
+end
+
 --#endregion
 
 -- mainserver fnc
