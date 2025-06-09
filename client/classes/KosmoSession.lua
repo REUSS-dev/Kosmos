@@ -99,6 +99,10 @@ function KosmoSession:setUser(session_login)
     return true
 end
 
+function KosmoSession:getSessionFolder()
+    return getSessionFolder(self.user)
+end
+
 -- session fnc
 
 function session.new(user)
@@ -121,7 +125,7 @@ KosmoSession.setDefault = session.setDefault
 
 function session.addSession(login, token, token_scope)
     sessions_info.sessions[login] = {token = token, scope = token_scope}
-    session.setDefault(login)
+    --session.setDefault(login)
 
     local new_session_folder = getSessionFolder(login)
     local new_session_folder_status = love.filesystem.getInfo(new_session_folder)

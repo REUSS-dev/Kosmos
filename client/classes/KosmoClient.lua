@@ -4,6 +4,7 @@ local client = {}
 local krequest = require("classes.KosmoRequest")
 local session = require("classes.KosmoSession")
 local socket = require("classes.KosmoSocket")
+local cache = require("classes.KosmoCache")
 
 -- documentation
 
@@ -132,7 +133,7 @@ function KosmoClient:api_receiveLogin(_, response, err)
     local data = response:getParams()
 
     self.session.addSession(data.login, data.token, data.scope)
-    self.session:setUser(data.login)
+    self:changeUser(data.login)
 
     self:disconnectAuthServer()
 end
@@ -187,6 +188,14 @@ function KosmoClient:requestMain(method, params, callback, nickname)
     request:setPeer(self.hostObject:getServer(MAIN_SERVER_NAME).peer)
 
     return self:request(request, callback, nickname)
+end
+
+function KosmoClient:changeUser(user)
+    print("change user", user)
+    self.session:setUser(user)
+    self.cache = cache.new(self.session)
+
+    print("now user", self.session:getUser())
 end
 
 --#region client functions
@@ -257,6 +266,12 @@ function client.new(serverAddress)
 
     obj.serverAddress = serverAddress
     obj.session = session.new()
+
+    if obj.session:getUser() then
+        obj.cache = cache.new(obj.session)
+    end
+
+    obj.updateTimer = 0
 
     obj.hostObject.onServerConnect = host_connect_server
 
