@@ -137,11 +137,14 @@ function connecting:tick(dt)
                 logo.palette:setColorAlpha("text", fade_time / FADEOUT_TIME)
                 connecting.palette:setColorAlpha("text", fade_time / FADEOUT_TIME)
             else
+                scene.load("login")
+
+                --[[ пока нет времени делать смену сессии 
                 if CLIENT.session:getUser() then
                     scene.load("main")
                 else
                     scene.load("login")
-                end
+                end]]
             end
         end
     end

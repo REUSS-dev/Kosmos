@@ -4,7 +4,6 @@ function love.load()
     love.keyboard.setKeyRepeat(true)
     local gui = require("libs.stellargui").hook()
     gui.loadExternalObjects()
-    gui.loadExternalObjects("ui")
 
     KOSMO_DEBUG = true
 
@@ -69,6 +68,8 @@ function love.load()
 
                 love.filesystem.setRequirePath(love.filesystem.getRequirePath() .. ";common/?.lua;client/?.lua;common/?/init.lua;client/?/init.lua;libs/?/init.lua;libs/?.lua")
                 lookfor_folder = "client"
+                gui.loadExternalObjects("ui")
+                
                 require("client")
                 gui:unregisterAll()
                 love.load()

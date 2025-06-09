@@ -17,8 +17,6 @@ local first_time = ...
 
 -- vars
 
-
-
 local CLIENT = CLIENT
 
 -- first time init
@@ -52,6 +50,17 @@ LOADING:move(love.graphics.getWidth() - 150, love.graphics.getHeight() - 150)
 -- init
 
 gui.unregisterAll()
+
+local profile = gui.KosmosProfile{
+    x = -10,
+    y = 10,
+    w = 300,
+    h = 100,
+    font = KOSMOFONT,
+    client = CLIENT,
+    profile = CLIENT.session:getUser()
+}
+gui.register(profile)
 
 -- Должен быть последним
 gui.register(LOADING)
