@@ -204,7 +204,7 @@ function ObjectUI:hoverOff(x, y)
 end
 
 --Triggers when object gets unregistered from StellarGUI. Partially serves as a kind of destructor.
----@param message string Unregister request message. Serves as a kind of "signal" [like in e.g. POSIX *kill* command] passed to UI object when lib tries to unregister it. 
+---@param message string? Unregister request message. Serves as a kind of "signal" [like in e.g. POSIX *kill* command] passed to UI object when lib tries to unregister it. 
 ---@return boolean? unregisterOk If the object ready to be unregistered. Return **true**, if object should not be unregistered right now, **false/nil** otherwise
 ---@diagnostic disable-next-line: unused-local
 function ObjectUI:unregister(message)

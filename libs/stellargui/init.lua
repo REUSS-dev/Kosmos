@@ -391,6 +391,12 @@ function stellar.unregister(uiobj, message)
         else
             return false
         end
+    else
+        return false
+    end
+
+    if not registeredObjects[registeredIndex] then
+        return false
     end
 
     if not registeredObjects[registeredIndex]:unregister() then
@@ -497,6 +503,7 @@ function stellar.hook(force)
                 end
 
                 currentHl:click(x, y, but)
+                print("clicked", currentHl.x, currentHl.y, currentHl.w, currentHl.h)
 
                 -- Double click shenanigans
                 if

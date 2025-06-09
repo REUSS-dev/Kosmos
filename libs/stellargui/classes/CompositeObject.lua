@@ -75,6 +75,20 @@ function CompositeObject:unregister(message)
     return halt
 end
 
+---Hide all objects im a composite
+function CompositeObject:hide()
+    for _, uiobject in ipairs(self.objects) do
+        uiobject:hide()
+    end
+end
+
+---Show all objects im a composite
+function CompositeObject:show()
+    for _, uiobject in ipairs(self.objects) do
+        uiobject:show()
+    end
+end
+
 ---Tick all UI objects in a composite object.
 ---@param dt seconds
 function CompositeObject:tick(dt)
@@ -101,6 +115,16 @@ end
 function CompositeObject:add(obj)
     obj.parent = self
     self.objects[#self.objects+1] = obj
+end
+
+function CompositeObject:remove(to_remove)
+    for i, obj in ipairs(self.objects) do
+        if obj == to_remove then
+            obj:unregister()
+            table.remove(self.objects, i)
+            return
+        end
+    end
 end
 
 --#region Passthrough static functions
