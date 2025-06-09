@@ -31,7 +31,9 @@ local GET_AUTH_SERVER_TASK_NAME = "auth_connect"
 local REGISTER_TASK_NAME = "register"
 local LOGIN_TASK_NAME = "login"
 local INTRODUCE_TASK_NAME = "introduce"
+local SEARCH_CONTACT_TASK_NAME = "search contact"
 local GET_USER_TASK_NAME = "get user"
+local ADD_FRIEND_TASK_NAME = "add friend"
 
 -- host commands
 
@@ -153,6 +155,22 @@ function KosmoClient:api_receiveIntroduce(_, response, err)
     self:getUser(response:getParams().clid)
 end
 
+function KosmoClient:api_receiveSearch(_, response, err)
+    if checkError(response, err, "Ошибка при поиске контакта, код %d.\n\"%s\"") then
+        self:finishIfRunning(SEARCH_CONTACT_TASK_NAME, response, err)
+        return
+    end
+
+    if not response:getParams().id then
+        self:finishIfRunning(SEARCH_CONTACT_TASK_NAME, response, err)
+        return
+    end
+
+    self.cache:setProfile(response:getParams().id, response:getParams())
+
+    self:finishIfRunning(SEARCH_CONTACT_TASK_NAME, response, err)
+end
+
 function KosmoClient:api_receiveUser(initial, response, err)
     if checkError(response, err, "Ошибка при получении информации о пользователе, код %d.\n\"%s\"") then
         self:finishIfRunning(GET_USER_TASK_NAME, response, err)
@@ -162,6 +180,17 @@ function KosmoClient:api_receiveUser(initial, response, err)
     self.cache:setProfile(initial:getParams().user, response:getParams())
 
     self:finishIfRunning(GET_USER_TASK_NAME, response, err)
+end
+
+function KosmoClient:api_receiveFriend(initial, response, err)
+    if checkError(response, err, "Ошибка при добавлении контакта, код %d.\n\"%s\"") then
+        self:finishIfRunning(ADD_FRIEND_TASK_NAME, response, err)
+        return
+    end
+
+    self.cache:setProfile(self.session:getUser(), response:getParams())
+
+    self:finishIfRunning(ADD_FRIEND_TASK_NAME, response, err)
 end
 
 --#endregion
@@ -307,6 +336,17 @@ function KosmoClient:introduceToken()
     return INTRODUCE_TASK_NAME
 end
 
+function KosmoClient:searchContact(email_or_login)
+    if #email_or_login == 0 then
+        return nil, "no query"
+    end
+
+    self.events:launchTask(SEARCH_CONTACT_TASK_NAME, nop, SEARCH_CONTACT_TASK_NAME)
+    self:requestMain("searchContact", {query = email_or_login}, self.api_receiveSearch)
+
+    return SEARCH_CONTACT_TASK_NAME
+end
+
 function KosmoClient:getUser(user_id)
     if not user_id then
         return nil, "no user id"
@@ -316,6 +356,16 @@ function KosmoClient:getUser(user_id)
     self:requestMain("getUser", {user = user_id}, self.api_receiveUser)
 
     return GET_USER_TASK_NAME
+end
+
+function KosmoClient:addFriend(user_id)
+    if not user_id then
+        return nil, "no user id"
+    end
+
+    self.events:launchTask(ADD_FRIEND_TASK_NAME, nop, ADD_FRIEND_TASK_NAME)
+    self:requestMain("addFriend", {user = user_id}, self.api_receiveFriend)
+    return ADD_FRIEND_TASK_NAME
 end
 
 --#endregion

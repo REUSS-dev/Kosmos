@@ -7,5 +7,7 @@ return {
 	introduceToken = "guest",
 
 	-- Client communication
-	getUser = "contacts"
+	searchContact = "contacts",
+	getUser = "contacts",
+	addFriend = "contacts"
 }

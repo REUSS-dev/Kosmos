@@ -62,6 +62,17 @@ local profile = gui.KosmosProfile{
 }
 gui.register(profile)
 
+local friends = gui.KosmosFriends{
+    x = -10,
+    y = -50,
+    w = 300,
+    h = 430,
+    r = 10,
+    font = KOSMOFONT_SMALL,
+    client = CLIENT
+}
+gui.register(friends)
+
 -- Должен быть последним
 gui.register(LOADING)
 gui.register(NOTIF)

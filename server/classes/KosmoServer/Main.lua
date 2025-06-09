@@ -132,6 +132,43 @@ function KosmoServerMain:api_introudce_talkback(original, auth_response, error_r
     self:response(original, auth_response:getParams())
 end
 
+function KosmoServerMain:api_receiveSearch(_, response, err)
+    if not response then
+        return
+    end
+
+    local erra = checkError(response, err)
+
+    local search_task_nickname = response:getUid()
+    local search_task_id = self.events:resolveNickname(search_task_nickname)
+
+    if not search_task_id then -- introduce task timeout
+        return
+    end
+
+    if erra then
+        self.events:finishTask(search_task_id, nil, erra)
+        return
+    end
+
+    self.events:finishTask(search_task_id, response)
+end
+
+function KosmoServerMain:api_search_talkback(original, search_response, error_ready)
+    if not search_response then
+        self:responseError(original, error_ready)
+        return
+    end
+
+    local params = search_response:getParams()
+    local user_id = params.user
+
+    local user_info = user_id and self:getUserData(user_id) or {}
+    user_info.id = user_id
+
+    self:response(original, user_info)
+end
+
 --#endregion
 
 function KosmoServerMain:stop()
@@ -198,6 +235,17 @@ function KosmoServerMain:resolveToken(request)
     self.events:launchTask(request, self.api_introudce_talkback, task_id)
 end
 
+---Resolve token from client via auth server
+---@param request KosmoRequest
+function KosmoServerMain:searchContact(request)
+    local params = request:getParams()
+
+    local query = params.query
+
+    local task_id = self:requestAuth("searchLoginEmail", {query = query}, self.api_receiveSearch)
+    self.events:launchTask(request, self.api_search_talkback, task_id)
+end
+
 ---Register profile for new user
 ---@param user_id integer
 function KosmoServerMain:registerNewUser(user_id, name, login)
@@ -226,6 +274,14 @@ function KosmoServerMain:getUserData(user_id)
     local user_info = sbon.decode(user_data)
 
     return user_info
+end
+
+function KosmoServerMain:setUserData(user_id, user_data)
+    local key = sbon.encodeUnsignedInteger(user_id)
+    local encoded_data = sbon.encode(user_data)
+
+    self.db_profiles:set(key, encoded_data)
+    self.db_profiles:writeAll()
 end
 
 --#endregion

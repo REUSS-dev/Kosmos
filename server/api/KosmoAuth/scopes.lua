@@ -4,4 +4,5 @@ return {
 	login = "guest",
 
 	resolveToken = "main",
+	searchLoginEmail = "main",
 }

@@ -45,6 +45,15 @@ end
 --#region contacts
 
 ---@param request KosmoRequest
+function main_api:searchContact(request)
+    if self:getAuthServerStatus() then
+        self:searchContact(request)
+    else
+        self:responseError(request, {message = "Authorization server is currently down or unreachable.", code = 200})
+    end
+end
+
+---@param request KosmoRequest
 function main_api:getUser(request)
     local user_id = request:getParams().user
 
@@ -53,6 +62,23 @@ function main_api:getUser(request)
     if not user_data then
         self:responseError(request, {message = "No user with provided ID.", code = 200})
     end
+
+    self:response(request, user_data)
+end
+
+---@param request KosmoRequest
+function main_api:addFriend(request)
+    local friend_id = request:getParams().user
+    local user_id = request:getClientID()
+
+    local user_data = self:getUserData(user_id)
+    user_data.friends[#user_data.friends+1] = friend_id
+
+    local friend_data = self:getUserData(friend_id)
+    friend_data.friends[#friend_data.friends+1] = user_id
+
+    self:setUserData(user_id, user_data)
+    self:setUserData(friend_id, friend_data)
 
     self:response(request, user_data)
 end
