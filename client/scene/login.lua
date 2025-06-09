@@ -151,18 +151,6 @@ local function hideLoad_callback_log(_, _, result)
         return
     end
 
-    if #login_textfield:getText() == 0 then
-        NOTIF:error("Введите логин.")
-        LOADING:finishLoading()
-        return
-    end
-
-    if #password_textfield:getText() == 0 then
-        NOTIF:error("Введите пароль.")
-        LOADING:finishLoading()
-        return
-    end
-
     local task_name, err = CLIENT:login(login_textfield:getText(), password_textfield:getText())
     if not task_name then
         NOTIF:error("Не удаётся произвести вход в систему.\n" .. err)
@@ -182,16 +170,6 @@ local button_login = gui.KosmosButton{
     h = 50,
     text = "Войти",
     action = function ()
-        if #login_textfield:getText() == 0 then
-            NOTIF:error("Введите логин.")
-            return
-        end
-
-        if #password_textfield:getText() == 0 then
-            NOTIF:error("Введите пароль.")
-            return
-        end
-
         if CLIENT:getAuthServerStatus() then
             local task_name, err = CLIENT:login(login_textfield:getText(), password_textfield:getText())
             if not task_name then
