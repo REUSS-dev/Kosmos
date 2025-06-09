@@ -69,7 +69,7 @@ local function packPassword(password)
     return love.data.hash("sha256", password)
 end
 
-local function checkError(response, err, message)
+local function checkError(response, err, message, ignore_pls)
     local msg
 
     if not response then
@@ -84,8 +84,8 @@ local function checkError(response, err, message)
         return false
     end
 
-    if NOTIF then
-        --NOTIF:error(msg)
+    if NOTIF and not ignore_pls then
+        NOTIF:error(msg)
     else
         print(msg)
     end
@@ -149,7 +149,7 @@ end
 function KosmoClient:api_receiveIntroduce(_, response, err)
     self:finishIfRunning(INTRODUCE_TASK_NAME, response, err)
 
-    if checkError(response, err, "Ошибка при подтверждении сессии, код %d.\n\"%s\"") then
+    if checkError(response, err, "Ошибка при подтверждении сессии, код %d.\n\"%s\"", true) then
         return
     end
 
@@ -173,7 +173,7 @@ function KosmoClient:api_receiveSearch(_, response, err)
 end
 
 function KosmoClient:api_receiveUser(initial, response, err)
-    if checkError(response, err, "Ошибка при получении информации о пользователе, код %d.\n\"%s\"") then
+    if checkError(response, err, "Ошибка при получении информации о пользователе, код %d.\n\"%s\"", true) then
         self:finishIfRunning(GET_USER_TASK_NAME, response, err)
         return
     end
