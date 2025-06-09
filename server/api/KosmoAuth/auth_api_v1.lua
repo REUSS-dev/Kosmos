@@ -66,7 +66,7 @@ function auth_api:login(request)
         return
     end
 
-    self:response(request, {login = login, scope = scope, token = success})
+    self:response(request, {login = err, user = login, scope = scope, token = success})
 end
 
 --#endregion

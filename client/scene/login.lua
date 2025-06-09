@@ -142,7 +142,7 @@ local function login_callback(_, _, result)
     end
 
     scene.load("main")
-    NOTIF:info("Вход успешен.\nДобро пожаловать, " .. tostring(result:getParams().login))
+    NOTIF:info("Вход успешен.\nДобро пожаловать, " .. tostring(result:getParams().user))
 end
 
 local function hideLoad_callback_log(_, _, result)
