@@ -21,12 +21,11 @@ kosmobutton.rules = {
 
     {{"action", "push", "press"}, "action", function() end},
     {{"text", "label"}, "text", "KosmoButton"},
-    {{"font"}, "font", love.graphics.getFont()}
+    {{"font"}, "font", love.graphics.getFont()},
+    {{"r", "radius", "rounding", "round"}, "r", 20},
 }
 
 -- consts
-
-local ROUNDING_RADIUS = 20
 
 local SHADOW_DISPLACEMENT = 5
 local SHADOW_ZOOMING = 4
@@ -47,20 +46,21 @@ local SHADOW_ZOOMING_SPEED = 3
 
 -- classes
 
----@class KosmoButton : Button
+---@class KosmosButton : Button
 ---@field currentShadowDisplacement number Number ranging from 0 to 1. Shadow offset off a button
 ---@field currentShadowZooming number Number ranging from 0 to 1. Shadow size up on hold
-local KosmoButton = {  }
-local KosmoButton_meta = {__index = KosmoButton}
-setmetatable(KosmoButton, {__index = button.class}) -- Set parenthesis
+---@field r number Rounding radius
+local KosmosButton = {  }
+local KosmosButton_meta = {__index = KosmosButton}
+setmetatable(KosmosButton, {__index = button.class}) -- Set parenthesis
 
-function KosmoButton:paint()
+function KosmosButton:paint()
     -- Shadow
     local shadow_offset = self.currentShadowDisplacement * SHADOW_DISPLACEMENT - self.currentShadowZooming * SHADOW_ZOOMING
     local shadow_reolution_change = 2 * (self.currentShadowZooming * SHADOW_ZOOMING)
 
     love.graphics.setColor(self.palette[1].darker)
-    love.graphics.rectangle("fill", 0 + shadow_offset, 0 + shadow_offset, self.w + shadow_reolution_change, self.h + shadow_reolution_change, ROUNDING_RADIUS)
+    love.graphics.rectangle("fill", 0 + shadow_offset, 0 + shadow_offset, self.w + shadow_reolution_change, self.h + shadow_reolution_change, self.r)
 
     if self.held then
         love.graphics.setColor(self.palette[1].brighter)
@@ -68,7 +68,7 @@ function KosmoButton:paint()
         love.graphics.setColor(self.palette[1])
     end
     
-    love.graphics.rectangle("fill", 0, 0, self.w, self.h, ROUNDING_RADIUS)
+    love.graphics.rectangle("fill", 0, 0, self.w, self.h, self.r)
 
     -- Text
     love.graphics.setColor(self.palette[2])
@@ -79,7 +79,7 @@ end
 ---Update shadow position depending on hl
 ---@param dt number
 ---@private
-function KosmoButton:updateShadow(dt)
+function KosmosButton:updateShadow(dt)
     if self.held then
         if self.currentShadowZooming < 1 then
             self.currentShadowZooming = self.currentShadowZooming + dt * SHADOW_ZOOMING_SPEED
@@ -119,7 +119,7 @@ function KosmoButton:updateShadow(dt)
     end
 end
 
-function KosmoButton:tick(dt)
+function KosmosButton:tick(dt)
     self:updateShadow(dt)
 end
 
@@ -127,7 +127,7 @@ end
 
 function kosmobutton.new(prototype)
     local obj = button.new(prototype)
-    setmetatable(obj, KosmoButton_meta) ---@cast obj KosmoButton
+    setmetatable(obj, KosmosButton_meta) ---@cast obj KosmosButton
 
     obj.currentShadowDisplacement = 1
     obj.currentShadowZooming = 0
