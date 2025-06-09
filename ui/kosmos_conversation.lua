@@ -67,6 +67,9 @@ local KosmosConversation_meta = {__index = KosmosConversation}
 setmetatable(KosmosConversation, {__index = complex.class}) -- Set parenthesis
 
 function KosmosConversation:setProfile(user_id)
+    self.callButton:show()
+    self.fileButton:show()
+    self.convButton:show()
     self.chat:setProfile(user_id)
 end
 
@@ -102,6 +105,7 @@ function conv.new(prototype)
         font = prototype.font,
         text = "Звонок"
     }
+    obj.callButton:hide()
     obj:add(obj.callButton)
 
     obj.fileButton = gui.KosmosButton{
@@ -113,6 +117,7 @@ function conv.new(prototype)
         font = prototype.font,
         text = "Файл"
     }
+    obj.fileButton:hide()
     obj:add(obj.fileButton)
 
     obj.convButton = gui.KosmosButton{
@@ -124,6 +129,7 @@ function conv.new(prototype)
         font = prototype.font,
         text = "Конференция"
     }
+    obj.convButton:hide()
     obj:add(obj.convButton)
 
     obj.chat = gui.KosmosChat{

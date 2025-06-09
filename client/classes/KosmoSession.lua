@@ -65,8 +65,8 @@ loadSessionsInfo()
 -- classes
 
 ---@class KosmoSession
----@field user string login of a user of this session
----@field sessionToken KosmoToken Token of a user of this session
+---@field user integer login of a user of this session
+---@field sessionToken KosmoToken? Token of a user of this session
 local KosmoSession = {}
 local KosmoSession_meta = { __index = KosmoSession }
 

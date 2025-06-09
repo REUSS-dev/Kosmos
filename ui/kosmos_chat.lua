@@ -97,6 +97,9 @@ function conv_chat.new(prototype)
         font = prototype.font,
         r = prototype.r,
         action = function (self)
+            if #self:getText() == 0 then
+                return
+            end
             CLIENT:sendMessage(obj.profile, self:getText())
             self:setText("")
         end
