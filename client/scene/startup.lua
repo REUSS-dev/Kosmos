@@ -35,14 +35,16 @@ if first_time then
     -- colors
     love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
     KOSMOCOLOR = {0.3, 0.3, 0.8, 1}
-    KOSMOCOLOR_A = {0.3, 0.3, 0.8, 0.8}
+    KOSMOCOLOR_A = {0.3, 0.3, 0.8, 0.6}
 
     ADDITIONALCOLOR = {0.6, 0.6, 0.2, 1}
-    ADDITIONALCOLOR_A = {0.6, 0.6, 0.2, 0.8}
+    ADDITIONALCOLOR_A = {0.6, 0.6, 0.2, 0.6}
 
     ERRORCOLOR = {0.8, 0.3, 0.3, 1}
-    ERRORCOLOR_A = {0.8, 0.3, 0.3, 0.8}
+    ERRORCOLOR_A = {0.8, 0.3, 0.3, 0.6}
 
+    KOSMOFONT_SMALL = love.graphics.newFont("resources/font.ttf", 18)
+    KOSMOFONT_SMALL_PLUS = love.graphics.newFont("resources/font.ttf", 20)
     KOSMOFONT = love.graphics.newFont("resources/font.ttf", 22)
     KOSMOFONT_MEDIUM = love.graphics.newFont("resources/font.ttf", 50)
     KOSMOFONT_BIG = love.graphics.newFont("resources/font.ttf", 82)
