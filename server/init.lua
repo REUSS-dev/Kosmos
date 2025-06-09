@@ -6,6 +6,10 @@ local serverAuth, serverMain
 function love.load()
     local gui = require("libs.stellargui").hook(true)
 
+    if KOSMO_DEBUG then
+        require("server.conf")
+    end
+
     --#region gui
 
     local font = love.graphics.newFont("resources/font.ttf", 18)
