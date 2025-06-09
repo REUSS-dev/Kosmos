@@ -1,3 +1,4 @@
+---@class KosmoApiMain : KosmoServerMain
 local main_api = {}
 local fallback
 
@@ -15,19 +16,21 @@ end
 
 --#endregion
 
---#region Guest access
+--#region Guest access - auth dependend
 
 ---Introduce your token to server (lock it to your peer)
----@param self KosmoServer
 ---@param request KosmoRequest
-function main_api.introduceToken(self, request)
-    
+function main_api:introduceToken(request)
+    if self:getAuthServerStatus() then
+        self:resolveToken(request)
+    else
+        self:responseError(request, {message = "Authorization server is currently down or unreachable.", code = 200})
+    end
 end
 
 ---Get auth server address
----@param self KosmoServerMain
 ---@param request KosmoRequest
-function main_api.getAuthorizationServer(self, request)
+function main_api:getAuthorizationServer(request)
     local auth_server = self:getAuthServerAddress()
 
     if auth_server then

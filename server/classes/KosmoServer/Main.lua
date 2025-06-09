@@ -40,6 +40,18 @@ local db_profiles_filepath = love.filesystem.getSaveDirectory() .. "/" .. DB_PRO
 
 -- fnc
 
+local function checkError(response, err)
+    if not response then
+        return {message = tostring(err), code = -1}
+    elseif response:isError() then
+        local data = response:getParams()
+
+        return {message = data.message, code = data.code}
+    end
+
+    return false
+end
+
 ---Redefined handler for server connect events in KosmoHost
 ---@param self KosmoHost
 ---@param serverName string
@@ -83,6 +95,43 @@ function KosmoServerMain:api_serverAck(_, response)
     self.connectedServers[response:getUid()] = nil
 end
 
+function KosmoServerMain:api_receiveResolveToken(initial, response, err)
+    if not response then
+        return
+    end
+
+    local erra = checkError(response, err)
+
+    local introduce_task_nickname = response:getUid()
+    local introduce_task_id = self.events:resolveNickname(introduce_task_nickname)
+
+    if not introduce_task_id then -- introduce task timeout
+        return
+    end
+
+    if erra then
+        self.events:finishTask(introduce_task_id, nil, erra)
+        return
+    end
+
+    local params = response:getParams()
+    local converted_scope = token.scopeArrayToMap(params.scope)
+
+    local new_token = token.new(initial:getParams().token, converted_scope, self.events:getTask(introduce_task_id):getPeer(), params.clid)
+    self.tokens:add(new_token)
+
+    self.events:finishTask(introduce_task_id, response)
+end
+
+function KosmoServerMain:api_introudce_talkback(original, auth_response, error_ready)
+    if not auth_response then
+        self:responseError(original, error_ready)
+        return
+    end
+
+    self:response(original, auth_response:getParams())
+end
+
 --#endregion
 
 function KosmoServerMain:stop()
@@ -101,6 +150,19 @@ end
 
 function KosmoServerMain:getAuthServerAddress()
     return self.connectedServers[AUTH_SERVER_NAME] and self.hostObject:getServer(AUTH_SERVER_NAME).address or nil
+end
+
+function KosmoServerMain:requestAuth(method, params, callback, nickname)
+    if not self:getAuthServerStatus() then
+        callback(self, nil, "Auth server is unreachable")
+        return nil
+    end
+
+    local request = krequest.new(method, params, self.connectedServers[AUTH_SERVER_NAME], AUTH_API_VERSION)
+
+    request:setPeer(self.hostObject:getServer(AUTH_SERVER_NAME).peer)
+
+    return self:request(request, callback, nickname)
 end
 
 --#region databases
@@ -124,6 +186,17 @@ end
 --#endregion
 
 --#region MAIN functions
+
+---Resolve token from client via auth server
+---@param request KosmoRequest
+function KosmoServerMain:resolveToken(request)
+    local params = request:getParams()
+
+    local usertoken = params.token
+
+    local task_id = self:requestAuth("resolveToken", {token = usertoken}, self.api_receiveResolveToken)
+    self.events:launchTask(request, self.api_introudce_talkback, task_id)
+end
 
 ---Register profile for new user
 ---@param user_id integer

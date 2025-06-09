@@ -2,6 +2,8 @@
 local auth_api = {}
 local fallback
 
+local sbon = require("stellardb.sbon")
+
 --#region Service communication - Authorization
 
 local server_hello_failed_error = {
@@ -135,6 +137,64 @@ function auth_api:register(request)
 end
 
 --#endregion
+
+--#endregion
+
+--#region server access
+
+local bad_token = {
+    message = "Provided token is invalid.",
+    code = 202,
+}
+
+local bad_login = {
+    msessage = "Provided logins do not match",
+    code = 204
+}
+
+function auth_api:resolveToken(request)
+    local params = request:getParams()
+
+    local token = params.token
+
+    local token_resolved = self.db_tokens:get(token)
+
+    if not token_resolved then
+        self:responseError(request, bad_token)
+        return
+    end
+
+    local token_info = sbon.decode(token_resolved) --[[@as table]]
+    local user_id, scope = token_info.user, token_info.scope
+
+    local token_account = self.db_accounts:get(user_id)
+    if not token_account then
+        self:responseError(request, bad_token)
+        return
+    end
+
+    self:response(request, {scope = scope, clid = user_id})
+end
+
+function auth_api:searchLoginEmail(request)
+    local params = request:getParams()
+
+    local login_or_email = string.lower(params.query)
+
+    local login_found = self.db_accounts:getByKey("login", login_or_email)
+
+    if login_found then
+        self:response(request, {user = login_found})
+    end
+
+    local email_found = self.db_accounts:getByKey("email", login_or_email)
+
+    if email_found then
+        self:response(request, {user = email_found})
+    end
+
+    self:response(request, {user = nil})
+end
 
 --#endregion
 

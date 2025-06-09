@@ -28,6 +28,7 @@ local CLIENT_API_NAME = "client"
 local GET_AUTH_SERVER_TASK_NAME = "auth_connect"
 local REGISTER_TASK_NAME = "register"
 local LOGIN_TASK_NAME = "login"
+local INTRODUCE_TASK_NAME = "introduce"
 
 -- host commands
 
@@ -36,6 +37,12 @@ local function host_connect_server(self, serverName, serverIndex)
     if serverName == AUTH_SERVER_NAME then
         if self.parent.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME) then
             self.parent.events:finishTask(self.parent.events:resolveNickname(GET_AUTH_SERVER_TASK_NAME), true)
+        end
+    end
+
+    if serverName == MAIN_SERVER_NAME then
+        if self.parent.session:getToken() then
+            self.parent:introduceToken()
         end
     end
 end
@@ -85,6 +92,7 @@ end
 ---@class KosmoClient : KosmoSocket
 ---@field serverAddress string?
 ---@field public session KosmoSession Session object to manipulate user data
+---@field cache KosmoCache client cache
 local KosmoClient = { }
 local KosmoClient_meta = { __index = KosmoClient }
 setmetatable(KosmoClient, { __index = socket.class })
@@ -130,6 +138,16 @@ function KosmoClient:api_receiveLogin(_, response, err)
     self:disconnectAuthServer()
 
     self:finishIfRunning(LOGIN_TASK_NAME, response, err)
+end
+
+function KosmoClient:api_receiveIntroduce(_, response, err)
+    self:finishIfRunning(INTRODUCE_TASK_NAME, response, err)
+
+    if checkError(response, err, "Ошибка при подтверждении сессии, код %d.\n\"%s\"") then
+        return
+    end
+
+    self:getUser(response:getParams().clid)
 end
 
 --#endregion
@@ -244,8 +262,22 @@ function KosmoClient:register(email, login, password)
     return REGISTER_TASK_NAME
 end
 
-function KosmoClient:attachCallback(task_nickname, callback)
-    self.events:attachCallback(task_nickname, callback)
+function KosmoClient:introduceToken()
+    local token = self.session:getTokenString()
+    local login = self.session:getUser()
+
+    if not login then
+        return nil, "Invalid session"
+    end
+
+    if #token == 0 then
+        return nil, "No token to introduce"
+    end
+
+    self.events:launchTask(INTRODUCE_TASK_NAME, nop, INTRODUCE_TASK_NAME)
+    self:requestMain("introduceToken", {token = token}, self.api_receiveIntroduce)
+
+    return INTRODUCE_TASK_NAME
 end
 
 --#endregion

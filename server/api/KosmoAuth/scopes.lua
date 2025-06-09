@@ -1,5 +1,7 @@
 return {
 	server_hello = "guest",
 	register = "guest",
-	login = "guest"
+	login = "guest",
+
+	resolveToken = "main",
 }
