@@ -5,3 +5,7 @@
 [submodule "libs/stellardb"]
 	path = libs/stellardb
 	url = https://github.com/REUSS-dev/StellarDB
+[submodule "libs/stellargui"]
+	path = libs/stellargui
+	url = https://github.com/REUSS-dev/qguir
+	branch = stellargui
